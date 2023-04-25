@@ -333,93 +333,93 @@ void Test3() {
     }
 
     // Копирование списков
-    // {
-    //     const SingleLinkedList<int> empty_list{};
-    //     // Копирование пустого списка
-    //     {
-    //         auto list_copy(empty_list);
-    //         assert(list_copy.IsEmpty());
-    //     }
+    {
+        const SingleLinkedList<int> empty_list{};
+        // Копирование пустого списка
+        {
+            auto list_copy(empty_list);
+            assert(list_copy.IsEmpty());
+        }
 
-    //     SingleLinkedList<int> non_empty_list{1, 2, 3, 4};
-    //     // Копирование непустого списка
-    //     {
-    //         auto list_copy(non_empty_list);
+        SingleLinkedList<int> non_empty_list{1, 2, 3, 4};
+        // Копирование непустого списка
+        {
+            auto list_copy(non_empty_list);
 
-    //         assert(non_empty_list.begin() != list_copy.begin());
-    //         assert(list_copy == non_empty_list);
-    //     }
-    // }
+            assert(non_empty_list.begin() != list_copy.begin());
+            assert(list_copy == non_empty_list);
+        }
+    }
 
-    // // Присваивание списков
-    // {
-    //     const SingleLinkedList<int> source_list{1, 2, 3, 4};
+    // Присваивание списков
+    {
+        const SingleLinkedList<int> source_list{1, 2, 3, 4};
 
-    //     SingleLinkedList<int> receiver{5, 4, 3, 2, 1};
-    //     receiver = source_list;
-    //     assert(receiver.begin() != source_list.begin());
-    //     assert(receiver == source_list);
-    // }
+        SingleLinkedList<int> receiver{5, 4, 3, 2, 1};
+        receiver = source_list;
+        assert(receiver.begin() != source_list.begin());
+        assert(receiver == source_list);
+    }
 
-    // // Вспомогательный класс, бросающий исключение после создания N-копии
-    // struct ThrowOnCopy {
-    //     ThrowOnCopy() = default;
-    //     explicit ThrowOnCopy(int& copy_counter) noexcept
-    //         : countdown_ptr(&copy_counter) {
-    //     }
-    //     ThrowOnCopy(const ThrowOnCopy& other)
-    //         : countdown_ptr(other.countdown_ptr)  //
-    //     {
-    //         if (countdown_ptr) {
-    //             if (*countdown_ptr == 0) {
-    //                 throw std::bad_alloc();
-    //             } else {
-    //                 --(*countdown_ptr);
-    //             }
-    //         }
-    //     }
-    //     // Присваивание элементов этого типа не требуется
-    //     ThrowOnCopy& operator=(const ThrowOnCopy& rhs) = delete;
-    //     // Адрес счётчика обратного отсчёта. Если не равен nullptr, то уменьшается при каждом копировании.
-    //     // Как только обнулится, конструктор копирования выбросит исключение
-    //     int* countdown_ptr = nullptr;
-    // };
+    // Вспомогательный класс, бросающий исключение после создания N-копии
+    struct ThrowOnCopy {
+        ThrowOnCopy() = default;
+        explicit ThrowOnCopy(int& copy_counter) noexcept
+            : countdown_ptr(&copy_counter) {
+        }
+        ThrowOnCopy(const ThrowOnCopy& other)
+            : countdown_ptr(other.countdown_ptr)  //
+        {
+            if (countdown_ptr) {
+                if (*countdown_ptr == 0) {
+                    throw std::bad_alloc();
+                } else {
+                    --(*countdown_ptr);
+                }
+            }
+        }
+        // Присваивание элементов этого типа не требуется
+        ThrowOnCopy& operator=(const ThrowOnCopy& rhs) = delete;
+        // Адрес счётчика обратного отсчёта. Если не равен nullptr, то уменьшается при каждом копировании.
+        // Как только обнулится, конструктор копирования выбросит исключение
+        int* countdown_ptr = nullptr;
+    };
 
-    // // Безопасное присваивание списков
-    // {
-    //     SingleLinkedList<ThrowOnCopy> src_list;
-    //     src_list.PushFront(ThrowOnCopy{});
-    //     src_list.PushFront(ThrowOnCopy{});
-    //     auto thrower = src_list.begin();
-    //     src_list.PushFront(ThrowOnCopy{});
+    // Безопасное присваивание списков
+    {
+        SingleLinkedList<ThrowOnCopy> src_list;
+        src_list.PushFront(ThrowOnCopy{});
+        src_list.PushFront(ThrowOnCopy{});
+        auto thrower = src_list.begin();
+        src_list.PushFront(ThrowOnCopy{});
 
-    //     int copy_counter = 0;  // при первом же копировании будет выброшего исключение
-    //     thrower->countdown_ptr = &copy_counter;
+        int copy_counter = 0;  // при первом же копировании будет выброшего исключение
+        thrower->countdown_ptr = &copy_counter;
 
-    //     SingleLinkedList<ThrowOnCopy> dst_list;
-    //     dst_list.PushFront(ThrowOnCopy{});
-    //     int dst_counter = 10;
-    //     dst_list.begin()->countdown_ptr = &dst_counter;
-    //     dst_list.PushFront(ThrowOnCopy{});
+        SingleLinkedList<ThrowOnCopy> dst_list;
+        dst_list.PushFront(ThrowOnCopy{});
+        int dst_counter = 10;
+        dst_list.begin()->countdown_ptr = &dst_counter;
+        dst_list.PushFront(ThrowOnCopy{});
 
-    //     try {
-    //         dst_list = src_list;
-    //         // Ожидается исключение при присваивании
-    //         assert(false);
-    //     } catch (const std::bad_alloc&) {
-    //         // Проверяем, что состояние списка-приёмника не изменилось
-    //         // при выбрасывании исключений
-    //         assert(dst_list.GetSize() == 2);
-    //         auto it = dst_list.begin();
-    //         assert(it != dst_list.end());
-    //         assert(it->countdown_ptr == nullptr);
-    //         ++it;
-    //         assert(it != dst_list.end());
-    //         assert(it->countdown_ptr == &dst_counter);
-    //         assert(dst_counter == 10);
-    //     } catch (...) {
-    //         // Других типов исключений не ожидается
-    //         assert(false);
-    //     }
-    // }
+        try {
+            dst_list = src_list;
+            // Ожидается исключение при присваивании
+            assert(false);
+        } catch (const std::bad_alloc&) {
+            // Проверяем, что состояние списка-приёмника не изменилось
+            // при выбрасывании исключений
+            assert(dst_list.GetSize() == 2);
+            auto it = dst_list.begin();
+            assert(it != dst_list.end());
+            assert(it->countdown_ptr == nullptr);
+            ++it;
+            assert(it != dst_list.end());
+            assert(it->countdown_ptr == &dst_counter);
+            assert(dst_counter == 10);
+        } catch (...) {
+            // Других типов исключений не ожидается
+            assert(false);
+        }
+    }
 }

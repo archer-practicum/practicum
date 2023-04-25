@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <initializer_list>
+#include <assert.h>
 
 template <typename Type>
 class SingleLinkedList {
@@ -182,21 +183,38 @@ public:
 
     SingleLinkedList(std::initializer_list<Type> values) {
         SingleLinkedList list;
-        for (const auto& el : values) list.PushFront(el);
+        for (auto iter = std::rbegin(values); iter != std::rend(values); ++iter) list.PushFront(*iter);
         swap(list);
     }
 
+    SingleLinkedList(const SingleLinkedList& other) {
+
+        assert(size_ == 0 && head_node_.next_node_ == nullptr);
+
+        SingleLinkedList copy;
+        Node* last_node = &copy.head_node_;
+        for (const auto el : other) {
+            Node* node = new Node(el, nullptr);            
+            last_node->next_node_ = node;
+            ++copy.size_;
+            last_node = node;
+        }
+        swap(copy);
+    }
+
+    SingleLinkedList& operator=(const SingleLinkedList& other) {
+        if(this == &other) return *this;
+
+        SingleLinkedList copy(other);
+
+        swap(copy);
+
+        return *this;
+    }
+
     void swap(SingleLinkedList& other) noexcept {
-        SingleLinkedList copy_list;
-        copy_list.head_node_    = other.head_node_;
-        copy_list.size_         = other.size_;
-
-        other.head_node_    = head_node_;
-        other.size_         = size_;
-
-        head_node_    = copy_list.head_node_;
-        size_         = copy_list.size_;
-       
+        std::swap(head_node_.next_node_, other.head_node_.next_node_);
+        std::swap(size_, other.size_); 
     }
 
     void Clear() noexcept {
@@ -246,15 +264,15 @@ bool operator>(const SingleLinkedList<Type>& lhs, const SingleLinkedList<Type>& 
 
 template<typename Type>
 bool operator<=(const SingleLinkedList<Type>& lhs, const SingleLinkedList<Type>& rhs) {
-    return rhs > lhs;
+    return !(rhs < lhs);
 }
 
 template<typename Type>
 bool operator>=(const SingleLinkedList<Type>& lhs, const SingleLinkedList<Type>& rhs) {
-    return rhs < lhs;
+    return !(rhs > lhs);
 }
 
 template<typename Type>
-void swap(const SingleLinkedList<Type>& lhs, const SingleLinkedList<Type>& rhs) noexcept {
+void swap(SingleLinkedList<Type>& lhs, SingleLinkedList<Type>& rhs) noexcept {
     lhs.swap(rhs);
 }
