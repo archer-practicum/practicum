@@ -167,7 +167,25 @@ public:
     // Разыменовывать этот итератор нельзя — попытка разыменования приведёт к неопределённому поведению
     [[nodiscard]] ConstIterator cend() const noexcept {        
         return Iterator(nullptr);
-    }    
+    }
+
+    // Возвращает итератор, указывающий на позицию перед первым элементом односвязного списка.
+    // Разыменовывать этот итератор нельзя - попытка разыменования приведёт к неопределённому поведению
+    [[nodiscard]] Iterator before_begin() noexcept {
+        return Iterator(&head_node_);
+    }
+
+    // Возвращает константный итератор, указывающий на позицию перед первым элементом односвязного списка.
+    // Разыменовывать этот итератор нельзя - попытка разыменования приведёт к неопределённому поведению
+    [[nodiscard]] ConstIterator cbefore_begin() const noexcept {
+        return ConstIterator(const_cast<Node*>(&head_node_));
+    }
+
+    // Возвращает константный итератор, указывающий на позицию перед первым элементом односвязного списка.
+    // Разыменовывать этот итератор нельзя - попытка разыменования приведёт к неопределённому поведению
+    [[nodiscard]] ConstIterator before_begin() const noexcept {
+        return ConstIterator(&head_node_);
+    }
 
     // Возвращает количество элементов в списке за время O(1)
     [[nodiscard]] std::size_t GetSize() const noexcept {        
@@ -202,6 +220,10 @@ public:
         swap(copy);
     }
 
+    ~SingleLinkedList() {
+        Clear();
+    }
+
     SingleLinkedList& operator=(const SingleLinkedList& other) {
         if(this == &other) return *this;
 
@@ -230,10 +252,39 @@ public:
         Node* node = new Node{t, head_node_.next_node_};
         head_node_.next_node_ = node;
         ++size_;
+    }    
+
+    void PopFront() noexcept {
+        if(!IsEmpty()) {
+            Node* node = head_node_.next_node_;
+            head_node_.next_node_ = node->next_node_;
+            delete node;
+            --size_;
+        }
     }
 
-    ~SingleLinkedList() {
-        Clear();
+    /*
+     * Вставляет элемент value после элемента, на который указывает pos.
+     * Возвращает итератор на вставленный элемент
+     * Если при создании элемента будет выброшено исключение, список останется в прежнем состоянии
+     */
+    Iterator InsertAfter(ConstIterator pos, const Type& value) {
+        Node* node = new Node(value, pos.node_->next_node_);
+        pos.node_->next_node_ = node;
+        ++size_;
+        return Iterator(node);
+    }
+
+    /*
+     * Удаляет элемент, следующий за pos.
+     * Возвращает итератор на элемент, следующий за удалённым
+     */
+    Iterator EraseAfter(ConstIterator pos) noexcept {
+        Node* node = pos.node_->next_node_;
+        pos.node_->next_node_ = node->next_node_;
+        delete node;
+        --size_;
+        return Iterator(pos.node_->next_node_);
     }
 
 private:
