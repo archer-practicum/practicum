@@ -10,6 +10,8 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}/platform/*.cpp",
+                "-D_GLIBCXX_DEBUG",
+                "-D_GLIBCXX_DEBUG_PEDANTIC",
                 "-o",
                 "${workspaceFolder}/debug/${fileBasenameNoExtension}"
             ],
@@ -46,6 +48,39 @@
             ],
             "group": "build",
             "detail": "компилятор: /usr/bin/g++"
+        },
+        {
+            "type": "cppbuild",
+            "label": "C/C++: clang debug",
+            "command": "/usr/bin/clang++",
+            "args": [
+                "${workspaceFolder}/platform/*.cpp",
+                "-std=c++17",
+                "-Werror",
+                "-o",
+                "${workspaceFolder}/debug/main",
+                "-fsanitize=address",                       // asan
+                "-g",                                       // debug
+                "-O1",                                      // без оптимизации
+                //"-fno-omit-frame-pointer",                  // asan
+                //"-fno-optimize-sibling-calls",              // asan
+                //"-fsanitize=leak",                          // поиск утечек памяти, только для linux и macos
+                //"-fsanitize=memory"                         // проверка на неинициализированные переменные и работу с ними
+                //"-D_GLIBCXX_DEBUG",                         // обработка ошибок в стандартных библиотеках
+                //"-D_GLIBCXX_DEBUG_PEDANTIC",                // обработка ошибок в стандартных библиотеках
+
+                
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",                
+            },
+            "detail": "clang debug."
         }
     ],
     "version": "2.0.0"
