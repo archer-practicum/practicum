@@ -1,94 +1,203 @@
-#include <algorithm>
+#include "simple_vector.h"
+
 #include <cassert>
-#include <string>
-#include <vector>
 #include <iostream>
+#include <numeric>
 
 using namespace std;
 
-// Объявляем Sentence<Token> для произвольного типа Token
-// синонимом vector<Token>.
-// Благодаря этому в качестве возвращаемого значения
-// функции можно указать не малопонятный вектор векторов,
-// а вектор предложений — vector<Sentence<Token>>.
-template <typename Token>
-using Sentence = vector<Token>;
-
-template <typename TokenForwardIt>
-TokenForwardIt FindSentenceEnd(TokenForwardIt tokens_begin, TokenForwardIt tokens_end) {
-    const TokenForwardIt before_sentence_end
-        = adjacent_find(tokens_begin, tokens_end, [](const auto& left_token, const auto& right_token) {
-              return left_token.IsEndSentencePunctuation() && !right_token.IsEndSentencePunctuation();
-          });
-    return before_sentence_end == tokens_end ? tokens_end : next(before_sentence_end);
+void TestReserveConstructor() {
+    cout << "TestReserveConstructor"s << endl;
+    SimpleVector<int> v(Reserve(5));
+    assert(v.GetCapacity() == 5);
+    assert(v.IsEmpty());
+    cout << "Done!"s << endl;
 }
 
-// Класс Token имеет метод bool IsEndSentencePunctuation() const
-template <typename Token>
-vector<Sentence<Token>> SplitIntoSentences(vector<Token> tokens) {
-    vector<Sentence<Token>> res;
-    auto iter_end = FindSentenceEnd(tokens.begin(), tokens.end());
-    auto iter_begin = tokens.begin();
-    while (1) {
-        Sentence<Token> tmp;
-        tmp.reserve(iter_end - iter_begin);
-        for (auto it = iter_begin; it != iter_end; ++it) tmp.push_back(move(*it));
-        res.push_back(move(tmp));
-        if (iter_end == tokens.end()) break;
-        iter_begin = iter_end;
-        iter_end = FindSentenceEnd(iter_end, tokens.end());
-    }
+void TestReserveMethod() {
+    cout << "TestReserveMethod"s << endl;
+    SimpleVector<int> v;
+    // зарезервируем 5 мест в векторе
+    v.Reserve(5);
+    assert(v.GetCapacity() == 5);
+    assert(v.IsEmpty());
 
-    return res;
+    // попытаемся уменьшить capacity до 1
+    v.Reserve(1);
+    // capacity должно остаться прежним
+    assert(v.GetCapacity() == 5);
+    // поместим 10 элементов в вектор
+    for (int i = 0; i < 10; ++i) {
+        v.PushBack(i);
+    }
+    assert(v.GetSize() == 10);
+    // увеличим capacity до 100
+    v.Reserve(100);
+    // проверим, что размер не поменялся
+    assert(v.GetSize() == 10);
+    assert(v.GetCapacity() == 100);
+    // проверим, что элементы на месте
+    for (int i = 0; i < 10; ++i) {
+        assert(v[i] == i);
+    }
+    cout << "Done!"s << endl;
 }
 
-struct TestToken {
-    string data;
-    bool is_end_sentence_punctuation = false;
+class X {
+public:
+    X()
+        : X(5) {
+    }
+    X(size_t num)
+        : x_(num) {
+    }
+    X(const X& other) = delete;
+    X& operator=(const X& other) = delete;
+    X(X&& other) {
+        x_ = exchange(other.x_, 0);
+    }
+    X& operator=(X&& other) {
+        x_ = exchange(other.x_, 0);
+        return *this;
+    }
+    size_t GetX() const {
+        return x_;
+    }
 
-    bool IsEndSentencePunctuation() const {
-        return is_end_sentence_punctuation;
-    }
-    bool operator==(const TestToken& other) const {
-        return data == other.data && is_end_sentence_punctuation == other.is_end_sentence_punctuation;
-    }
+private:
+    size_t x_;
 };
 
-ostream& operator<<(ostream& stream, const TestToken& token) {
-    return stream << token.data;
+SimpleVector<int> GenerateVector(size_t size) {
+    SimpleVector<int> v(size);
+    iota(v.begin(), v.end(), 1);
+    return v;
 }
 
-// Тест содержит копирования объектов класса TestToken.
-// Для проверки отсутствия копирований в функции SplitIntoSentences
-// необходимо написать отдельный тест.
-void TestSplitting() {
-    assert(SplitIntoSentences(vector<TestToken>({{"Split"s}, {"into"s}, {"sentences"s}, {"!"s}}))
-           == vector<Sentence<TestToken>>({{{"Split"s}, {"into"s}, {"sentences"s}, {"!"s}}}));
-
-    assert(SplitIntoSentences(vector<TestToken>({{"Split"s}, {"into"s}, {"sentences"s}, {"!"s, true}}))
-           == vector<Sentence<TestToken>>({{{"Split"s}, {"into"s}, {"sentences"s}, {"!"s, true}}}));
-
-    assert(SplitIntoSentences(vector<TestToken>(
-               {{"Split"s}, {"into"s}, {"sentences"s}, {"!"s, true}, {"!"s, true}, {"Without"s}, {"copies"s}, {"."s, true}}))
-           == vector<Sentence<TestToken>>({
-               {{"Split"s}, {"into"s}, {"sentences"s}, {"!"s, true}, {"!"s, true}},
-               {{"Without"s}, {"copies"s}, {"."s, true}},
-           }));
+void TestTemporaryObjConstructor() {
+    const size_t size = 1000000;
+    cout << "Test with temporary object, copy elision" << endl;
+    SimpleVector<int> moved_vector(GenerateVector(size));
+    assert(moved_vector.GetSize() == size);
+    cout << "Done!" << endl << endl;
 }
 
-int main() {
-    TestSplitting();
-    auto res1 = SplitIntoSentences(vector<TestToken>(
-        {
-            {"Красиво"s}, {"ты"s}, {"вошла"s}, {"в"s}, {"мою"s}, {"грешную"s}, {"жизнь"s}, {"!"s, true}, 
-            {"Устремленно"s}, {"ты"s}, {"ушла"s}, {"из"s}, {"неё"s}, {"."s, true} 
-        })
-    );
-    for (auto container : res1) {
-        for (auto el : container) {
-            cout << el << " ";
-        }
-        cout << endl;
+void TestTemporaryObjOperator() {
+    const size_t size = 1000000;
+    cout << "Test with temporary object, operator=" << endl;
+    SimpleVector<int> moved_vector;
+    assert(moved_vector.GetSize() == 0);
+    moved_vector = GenerateVector(size);
+    assert(moved_vector.GetSize() == size);
+    cout << "Done!" << endl << endl;
+}
+
+void TestNamedMoveConstructor() {
+    const size_t size = 1000000;
+    cout << "Test with named object, move constructor" << endl;
+    SimpleVector<int> vector_to_move(GenerateVector(size));
+    assert(vector_to_move.GetSize() == size);
+
+    SimpleVector<int> moved_vector(move(vector_to_move));
+    assert(moved_vector.GetSize() == size);
+    assert(vector_to_move.GetSize() == 0);
+    cout << "Done!" << endl << endl;
+}
+
+void TestNamedMoveOperator() {
+    const size_t size = 1000000;
+    cout << "Test with named object, operator=" << endl;
+    SimpleVector<int> vector_to_move(GenerateVector(size));
+    assert(vector_to_move.GetSize() == size);
+
+    SimpleVector<int> moved_vector = move(vector_to_move);
+    assert(moved_vector.GetSize() == size);
+    assert(vector_to_move.GetSize() == 0);
+    cout << "Done!" << endl << endl;
+}
+
+void TestNoncopiableMoveConstructor() {
+    const size_t size = 5;
+    cout << "Test noncopiable object, move constructor" << endl;
+    SimpleVector<X> vector_to_move;
+    for (size_t i = 0; i < size; ++i) {
+        vector_to_move.PushBack(X(i));
     }
 
+    SimpleVector<X> moved_vector = move(vector_to_move);
+    assert(moved_vector.GetSize() == size);
+    assert(vector_to_move.GetSize() == 0);
+
+    for (size_t i = 0; i < size; ++i) {
+        assert(moved_vector[i].GetX() == i);
+    }
+    cout << "Done!" << endl << endl;
+}
+
+void TestNoncopiablePushBack() {
+    const size_t size = 5;
+    cout << "Test noncopiable push back" << endl;
+    SimpleVector<X> v;
+    for (size_t i = 0; i < size; ++i) {
+        v.PushBack(X(i));
+    }
+
+    assert(v.GetSize() == size);
+
+    for (size_t i = 0; i < size; ++i) {
+        assert(v[i].GetX() == i);
+    }
+    cout << "Done!" << endl << endl;
+}
+
+void TestNoncopiableInsert() {
+    const size_t size = 5;
+    cout << "Test noncopiable insert" << endl;
+    SimpleVector<X> v;
+    for (size_t i = 0; i < size; ++i) {
+        v.PushBack(X(i));
+    }
+
+    // в начало
+    v.Insert(v.begin(), X(size + 1));
+    assert(v.GetSize() == size + 1);
+    assert(v.begin()->GetX() == size + 1);
+    // в конец
+    v.Insert(v.end(), X(size + 2));
+    assert(v.GetSize() == size + 2);
+    assert((v.end() - 1)->GetX() == size + 2);
+    // в середину
+    v.Insert(v.begin() + 3, X(size + 3));
+    assert(v.GetSize() == size + 3);
+    assert((v.begin() + 3)->GetX() == size + 3);
+    cout << "Done!" << endl << endl;
+}
+
+void TestNoncopiableErase() {
+    const size_t size = 3;
+    cout << "Test noncopiable erase" << endl;
+    SimpleVector<X> v;
+    for (size_t i = 0; i < size; ++i) {
+        v.PushBack(X(i));
+    }
+
+    auto it = v.Erase(v.begin());
+    assert(it->GetX() == 1);
+    cout << "Done!" << endl << endl;
+}
+
+
+int main() {
+    TestReserveConstructor();
+    TestReserveMethod();
+
+    TestTemporaryObjConstructor();
+    TestTemporaryObjOperator();
+    TestNamedMoveConstructor();
+    TestNamedMoveOperator();
+    TestNoncopiableMoveConstructor();
+    TestNoncopiablePushBack();
+    TestNoncopiableInsert();
+    TestNoncopiableErase();
+    return 0;
 }
