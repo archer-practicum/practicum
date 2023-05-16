@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <utility>
 
 template <typename Type>
 class ArrayPtr {
@@ -20,6 +21,11 @@ public:
         raw_ptr_ = raw_ptr;
     }
 
+    // перемещающий конструктор
+    explicit ArrayPtr(ArrayPtr&& other) noexcept {
+        raw_ptr_ = std::exchange(other.raw_ptr_, nullptr);
+    }
+
     // Запрещаем копирование
     ArrayPtr(const ArrayPtr&) = delete;
 
@@ -29,6 +35,11 @@ public:
 
     // Запрещаем присваивание
     ArrayPtr& operator=(const ArrayPtr&) = delete;
+
+    // перемещающий оператор присвоения
+    ArrayPtr& operator=(ArrayPtr&& other) {
+        raw_ptr_ = std::exchange(other.raw_ptr_, nullptr);
+    };
 
     // Прекращает владением массивом в памяти, возвращает значение адреса массива
     // После вызова метода указатель на массив должен обнулиться

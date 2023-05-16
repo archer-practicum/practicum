@@ -182,6 +182,20 @@ public:
         ++size_;        
     }
 
+    // Добавляет по ссылке rvalue элемент в конец вектора
+    // При нехватке места увеличивает вдвое вместимость вектора
+    void PushBack(Type&& item) {
+        if (size_ == capacity_) {
+            capacity_ = std::max(capacity_ * 2, size_t(2));
+            ArrayPtr<Type> arr(capacity_);
+            std::move(begin(), end(), arr.Get());            
+            array_.swap(arr);
+            std::fill(end(), begin() + capacity_, Type());
+        }        
+        *end() = std::move(item);
+        ++size_;        
+    }
+
     // Вставляет значение value в позицию pos.
     // Возвращает итератор на вставленное значение
     // Если перед вставкой значения вектор был заполнен полностью,
@@ -202,6 +216,32 @@ public:
             std::copy_backward(begin() + dis, end(), end() + 1);
             res = begin() + dis;
             *res = value;
+        }
+        ++size_;
+        return res;
+    }
+
+    // Вставляет по ссылке rvalue значение value в позицию pos.
+    // Возвращает итератор на вставленное значение
+    // Если перед вставкой значения вектор был заполнен полностью,
+    // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
+    Iterator Insert(ConstIterator pos, Type&& value) {
+        Iterator res;
+        size_t dis = std::distance(begin(), const_cast<Iterator>(pos));
+        if (size_ == capacity_) {
+            capacity_ = std::max(capacity_ * 2, size_t(2));
+            ArrayPtr<Type> arr(capacity_);            
+            std::copy(begin(), begin() + dis, arr.Get());
+            res = arr.Get() + dis;
+            *res = std::move(value);
+            std::copy(begin() + dis, end(), res + 1);
+            array_.swap(arr);
+            std::fill(end() + 1, begin() + capacity_, Type());
+        } else {
+            std::copy_backward(begin() + dis, end(), end() + 1);
+            res = begin() + dis;
+
+            *res = std::move(value);
         }
         ++size_;
         return res;
