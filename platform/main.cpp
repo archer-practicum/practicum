@@ -32,7 +32,7 @@ void TestReserveMethod() {
     }
     assert(v.GetSize() == 10);
     // увеличим capacity до 100
-    v.Reserve(100);
+    v.Reserve(static_cast<size_t>(100));
     // проверим, что размер не поменялся
     assert(v.GetSize() == 10);
     assert(v.GetCapacity() == 100);

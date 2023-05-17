@@ -72,9 +72,7 @@ public:
 
     // Обменивается значениям указателя на массив с объектом other
     void swap(ArrayPtr& other) noexcept {
-        Type* copy_other = other.raw_ptr_;
-        other.raw_ptr_ = raw_ptr_;
-        raw_ptr_ = copy_other;
+        other.raw_ptr_ =  std::exchange(raw_ptr_, other.raw_ptr_);
     }
 
 private:
