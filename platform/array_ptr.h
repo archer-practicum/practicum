@@ -39,6 +39,7 @@ public:
     // перемещающий оператор присвоения
     ArrayPtr& operator=(ArrayPtr&& other) {
         raw_ptr_ = std::exchange(other.raw_ptr_, nullptr);
+        return *this;
     };
 
     // Прекращает владением массивом в памяти, возвращает значение адреса массива

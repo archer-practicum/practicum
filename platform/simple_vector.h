@@ -53,7 +53,20 @@ public:
         size_ = init.size();
         capacity_ = init.size();
         array_.swap(arr);
-        std::copy(init.begin(), init.end(), begin());
+        std::move(init.begin(), init.end(), begin());
+    }
+
+    SimpleVector(SimpleVector&& other) {
+        array_ = std::move(other.array_);
+        size_ = std::exchange(other.size_, 0);
+        capacity_ = std::exchange(other.capacity_, 0);
+    }
+
+    SimpleVector& operator=(SimpleVector&& other) {
+        array_ = std::move(other.array_);
+        size_ = std::exchange(other.size_, 0);
+        capacity_ = std::exchange(other.capacity_, 0);
+        return *this;
     }
 
     // Возвращает количество элементов в массиве
@@ -108,10 +121,10 @@ public:
             if (new_size > capacity_) {
                 capacity_ = new_size;
                 ArrayPtr<Type> arr(capacity_);
-                std::copy(begin(), end(), arr.Get());            
+                std::move(begin(), end(), arr.Get());
                 array_.swap(arr);
-            } 
-                std::fill(end(), begin() + new_size, Type());
+            }   
+            for (auto it = end(); it != (begin() + new_size); ++it) *it = std::move(Type());            
         }
         size_ = new_size;
     }
@@ -174,9 +187,8 @@ public:
         if (size_ == capacity_) {
             capacity_ = std::max(capacity_ * 2, size_t(2));
             ArrayPtr<Type> arr(capacity_);
-            std::copy(begin(), end(), arr.Get());            
-            array_.swap(arr);
-            std::fill(end(), begin() + capacity_, Type());
+            std::move(begin(), end(), arr.Get());
+            array_.swap(arr);            
         } 
         *end() = item;
         ++size_;        
@@ -189,11 +201,10 @@ public:
             capacity_ = std::max(capacity_ * 2, size_t(2));
             ArrayPtr<Type> arr(capacity_);
             std::move(begin(), end(), arr.Get());            
-            array_.swap(arr);
-            std::fill(end(), begin() + capacity_, Type());
-        }        
+            array_.swap(arr);            
+        }
         *end() = std::move(item);
-        ++size_;        
+        ++size_;
     }
 
     // Вставляет значение value в позицию pos.
@@ -206,14 +217,13 @@ public:
         if (size_ == capacity_) {
             capacity_ = std::max(capacity_ * 2, size_t(2));
             ArrayPtr<Type> arr(capacity_);            
-            std::copy(begin(), begin() + dis, arr.Get());
+            std::move(begin(), begin() + dis, arr.Get());
             res = arr.Get() + dis;
             *res = value;
-            std::copy(begin() + dis, end(), res + 1);
-            array_.swap(arr);
-            std::fill(end() + 1, begin() + capacity_, Type());
+            std::move(begin() + dis, end(), res + 1);
+            array_.swap(arr);            
         } else {
-            std::copy_backward(begin() + dis, end(), end() + 1);
+            std::move_backward(begin() + dis, end(), end() + 1);
             res = begin() + dis;
             *res = value;
         }
@@ -231,14 +241,13 @@ public:
         if (size_ == capacity_) {
             capacity_ = std::max(capacity_ * 2, size_t(2));
             ArrayPtr<Type> arr(capacity_);            
-            std::copy(begin(), begin() + dis, arr.Get());
+            std::move(begin(), begin() + dis, arr.Get());
             res = arr.Get() + dis;
             *res = std::move(value);
-            std::copy(begin() + dis, end(), res + 1);
-            array_.swap(arr);
-            std::fill(end() + 1, begin() + capacity_, Type());
+            std::move(begin() + dis, end(), res + 1);
+            array_.swap(arr);            
         } else {
-            std::copy_backward(begin() + dis, end(), end() + 1);
+            std::move_backward(begin() + dis, end(), end() + 1);
             res = begin() + dis;
 
             *res = std::move(value);
@@ -256,7 +265,7 @@ public:
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
         size_t dis = std::distance(begin(), const_cast<Iterator>(pos));
-        std::copy(begin() + dis + 1, end(), begin() + dis);
+        std::move(begin() + dis + 1, end(), begin() + dis);
         --size_;
         return begin() + dis;
     }
@@ -281,8 +290,7 @@ public:
     void Reserve(size_t new_capacity) {
         if (new_capacity <= capacity_) return;
         ArrayPtr<Type> arr(new_capacity);
-        std::copy(begin(), end(), arr.Get());
-        std::fill(&arr[size_], &arr[new_capacity], Type());
+        std::move(begin(), end(), arr.Get());        
         array_.swap(arr);
         capacity_ = new_capacity;
     }
