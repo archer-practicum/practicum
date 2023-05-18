@@ -30,21 +30,17 @@ public:
     }
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
-    explicit SimpleVector(size_t size) {
-        InitializeValue(size);
+    explicit SimpleVector(size_t size) : array_(size), size_(size), capacity_(size) {            
+        std::fill(begin(), end(), Type{});
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
-    SimpleVector(size_t size, const Type& value) {
-        InitializeValue(size, value);
+    SimpleVector(size_t size, const Type& value) : array_(size), size_(size), capacity_(size) {        
+        std::fill(begin(), end(), value);
     }
 
     // Создаёт вектор из std::initializer_list
-    SimpleVector(std::initializer_list<Type> init) {
-        ArrayPtr<Type> arr(init.size());
-        size_ = init.size();
-        capacity_ = init.size();
-        array_.swap(arr);
+    SimpleVector(std::initializer_list<Type> init) : array_(init.size()), size_(init.size()), capacity_(init.size()) {        
         std::move(init.begin(), init.end(), begin());
     }
 
@@ -93,11 +89,13 @@ public:
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index < size_);
         return array_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_);
         return array_[index];
     }
 
@@ -130,7 +128,7 @@ public:
                 std::move(begin(), end(), arr.Get());
                 array_.swap(arr);
             }   
-            for (auto it = end(); it != (begin() + new_size); ++it) *it = std::move(Type());                
+            for (auto it = end(); it != (begin() + new_size); ++it) *it = std::move(Type{});                
         }
         size_ = new_size;
     }
@@ -174,7 +172,7 @@ public:
     // Добавляет элемент в конец вектора
     // При нехватке места увеличивает вдвое вместимость вектора
     void PushBack(const Type& item) {
-        PushBack();
+        CheckCapacitanceWhenPushBack();
         *end() = item;
         ++size_;        
     }
@@ -182,7 +180,7 @@ public:
     // Добавляет по ссылке rvalue элемент в конец вектора
     // При нехватке места увеличивает вдвое вместимость вектора
     void PushBack(Type&& item) {
-        PushBack();
+        CheckCapacitanceWhenPushBack();
         *end() = std::move(item);
         ++size_;
     }
@@ -192,7 +190,7 @@ public:
     // Если перед вставкой значения вектор был заполнен полностью,
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, const Type& value) {
-        Iterator res = Insert(pos);
+        Iterator res = ShiftAndMoveElementsWhenInsert(pos);
         *res = value;
         ++size_;
         return res;
@@ -203,7 +201,7 @@ public:
     // Если перед вставкой значения вектор был заполнен полностью,
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, Type&& value) {        
-        Iterator res = Insert(pos);
+        Iterator res = ShiftAndMoveElementsWhenInsert(pos);
         *res = std::move(value);
         ++size_;
         return res;
@@ -239,15 +237,7 @@ public:
     }
 
 private:
-    void InitializeValue(size_t size, const Type& value = Type()) {
-        ArrayPtr<Type> arr(size);        
-        size_ = size;
-        capacity_ = size;
-        array_.swap(arr);        
-        std::fill(begin(), end(), value);
-    }
-
-    void PushBack() {
+    void CheckCapacitanceWhenPushBack() {
         if (size_ == capacity_) {
             capacity_ = std::max(capacity_ * 2, size_t(2));
             ArrayPtr<Type> arr(capacity_);
@@ -256,7 +246,7 @@ private:
         }        
     }
 
-    Iterator Insert(ConstIterator pos) {
+    Iterator ShiftAndMoveElementsWhenInsert(ConstIterator pos) {
         size_t dist = std::distance(cbegin(), pos);
         if (size_ == capacity_) {
             capacity_ = std::max(capacity_ * 2, size_t(2));
@@ -270,14 +260,19 @@ private:
         return begin() + dist;
     }
 
-    ArrayPtr<Type> array_;
+    ArrayPtr<Type> array_ = ArrayPtr<Type>();
     size_t size_ = 0;
     size_t capacity_ = 0;
 };
 
 
 template <typename Type>
-inline bool operator==(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {    
+inline bool operator==(const SimpleVector<Type>& lhs, const SimpleVector<Type>& rhs) {
+    if (lhs.GetSize() != rhs.GetSize()) {
+        return false;
+    } else if (lhs.begin() == rhs.begin()) {
+        return true;
+    }
     return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
 
