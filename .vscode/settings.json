@@ -53,5 +53,6 @@
         "compare": "cpp",
         "concepts": "cpp",
         "numbers": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": true
 }

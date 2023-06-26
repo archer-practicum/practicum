@@ -5,15 +5,17 @@
             "label": "C/C++: g++ debug",
             "command": "/usr/bin/g++",
             "args": [
-                "-std=c++17",
-                "-Werror",
+                "--std=c++17",                                
+                "-Werror",                
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}/platform/*.cpp",
-                "-D_GLIBCXX_DEBUG",
-                "-D_GLIBCXX_DEBUG_PEDANTIC",
+                //"-D_GLIBCXX_DEBUG",
+                //"-D_GLIBCXX_DEBUG_PEDANTIC",
                 "-o",
-                "${workspaceFolder}/debug/${fileBasenameNoExtension}"
+                "${workspaceFolder}/debug/${fileBasenameNoExtension}",
+                "-ltbb",
+                "-lpthread"
             ],
             "options": {
                 "cwd": "${fileDirname}"
