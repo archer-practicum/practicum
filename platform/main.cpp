@@ -6,6 +6,7 @@
 #include <string>
 #include <future>
 #include <execution>
+#include <vector>
 
 using namespace std;
 
@@ -19,69 +20,59 @@ struct Stats {
     }
 };
 
-Stats operator+ (Stats const lhs, Stats const rhs) {
-    Stats tmp(lhs);
-    tmp += rhs;
-    return tmp;
-}
-
 using KeyWords = set<string, less<>>;
 
-// Stats StringToStats(const vector<string> &&words, const KeyWords& key_words) {    
-//     Stats res;
-//     for (const string &word : key_words) {
-//         res.word_frequences[word] = 0;
-//     }
-//     for_each (execution::par, words.begin(), words.end(), 
-//         [&](const string &word) { 
-//             if (key_words.count(word)) {
-//                 res.word_frequences[word] += 1;
-//             };
-//         }
-//     );
-//     return res;
-// }
-
-Stats StringToStats(const vector<string> &&words, const KeyWords& key_words) {    
-    Stats res;
-    for (const string word : words) {
-        if (key_words.count(word)) {
-            res.word_frequences[word] += 1;
-        }        
+vector<string> SplitIntoWords(const string &str) {
+    vector<string> res;
+    string word = "";
+    for (const char c : str) {
+        if(c != ' ') {
+            word += c;
+        } else {
+            if (!word.empty()) {
+                res.push_back(move(word));
+            }
+        }
+    }
+    if (!word.empty()) {
+        res.push_back(move(word));
     }
     return res;
 }
 
+Stats StringToStats(const vector<string> &&strs, const KeyWords& key_words) {
+    Stats res;
+    for (const string &str : strs) {
+        for (const string word : SplitIntoWords(str)) {
+            if (key_words.count(word)) {
+                res.word_frequences[word] += 1;
+            }        
+        }
+    }    
+    return res;
+}
+
 Stats ExploreKeyWords(const KeyWords& key_words, istream& input) {
-    string word;
+    string str;
     vector<string> words;
     words.reserve(5000);
     vector<future<Stats>> pats_stats;
     Stats res;
 
-    while (input >> word) {
+    while (!input.eof()) {
+        getline(input, str);
         if (words.size() == 5000) {
             pats_stats.push_back(move(async(StringToStats, move(words), cref(key_words))));
             words.reserve(5000);
         }
-        words.push_back(move(word));
+        words.push_back(move(str));
     }
     pats_stats.push_back(move(async(StringToStats, move(words), cref(key_words))));
-
-    return transform_reduce(//execution::par, 
-                    pats_stats.begin(), pats_stats.end(),
-                    Stats{},
-                    [](auto &el) { return el.get(); },
-                    [](auto &l, auto &r){ return l + r; });
-    // for (auto &el : pats_stats) {
-    //     res += el.get();
-    // }
-
-    // vector<Stats> all_stats;
-    // for (auto &el : pats_stats) {
-    //     all_stats.push_back(move(el.get()));
-    // }
-    // return reduce(execution::par, all_stats.begin(), all_stats.end(), Stats{}, [](const auto &l, const auto &r) { return l + r; });
+    
+    for (auto &el : pats_stats) {
+        res += el.get();
+    }
+    return res;
 }
 
 int main() {
@@ -96,6 +87,10 @@ int main() {
 
     for (const auto& [word, frequency] : ExploreKeyWords(key_words, ss).word_frequences) {
         cout << word << " " << frequency << endl;
+    }
+
+    for (const string &word : SplitIntoWords("  this new yangle service really rocks  ")) {
+        cout << word << endl;
     }
 
     return 0;
