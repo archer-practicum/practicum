@@ -14,8 +14,8 @@
                 //"-D_GLIBCXX_DEBUG_PEDANTIC",
                 "-o",
                 "${workspaceFolder}/debug/${fileBasenameNoExtension}",
-                "-ltbb",
-                "-lpthread"
+                //"-ltbb",
+                //"-lpthread"
             ],
             "options": {
                 "cwd": "${fileDirname}"
