@@ -61,19 +61,19 @@ void DatabaseFilling(TransportCatalogue &catalog, std::istream &input) {
 
         std::deque<const Stop*> stops;
         pos_begin = pos_end + 1;
-        size_t pos_delimiter = query.find_first_of(std::string("->"), pos_begin);
-        bool is_circule = query.at(pos_delimiter) == '>';
         
         while (1) {
             pos_begin = query.find_first_not_of(' ', pos_begin); // begin stop name
             if(pos_begin == query.npos) break;
-            pos_delimiter = query.find_first_of(std::string("->"), pos_begin); // find delimiter
+            size_t pos_delimiter = query.find_first_of(std::string("->"), pos_begin); // find delimiter
             pos_end = query.find_last_not_of(' ', pos_delimiter - 1) + 1;    // +1 - результат работы ф. указывает на последнюю букву имени остановки
             std::string stop_name = query.substr(pos_begin, pos_end - pos_begin); 
             stops.push_back(catalog.GetStop(stop_name));
             if (pos_delimiter == query.npos) break;
             pos_begin = pos_delimiter + 1;
         }
+
+        bool is_circule = query.at(query.find_last_of(std::string("->"))) == '>';
         
         catalog.AddBus({std::move(bus_name), std::move(stops), is_circule});
     }

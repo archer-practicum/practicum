@@ -9,7 +9,7 @@ std::string Bus::ToString() const {
     std::stringstream sstr;
     size_t count_stops = 0;
     std::set<std::string> unique_stops;
-    double distance = 0;    
+    double distance = 0;
 
     for (size_t i = 0u; i < stops.size() - 1; ++i) {
         distance += ComputeDistance({stops.at(i)->latitude, stops.at(i)->longitude},
@@ -34,29 +34,32 @@ std::string Bus::ToString() const {
 
     return sstr.str();
 }
-      
+
 void TransportCatalogue::AddStop(const Stop &stop) {
-    stops.insert({hasher(stop.name), std::move(stop)});
+    _all_buses_passing_stop[stop.name];
+    _stops.insert({stop.name, std::move(stop)});
 }
 
-void TransportCatalogue::AddBus(const Bus &bus) {
-    buses.insert({hasher(bus.name), std::move(bus)});
-}
-
-const Stop* TransportCatalogue::GetStop(const std::string &name) const {
-    return &stops.at(hasher(name));
-}
-
-const Bus* TransportCatalogue::GetBus(const std::string &name) const {
-    return &buses.at(hasher(name));
-}
-
-const std::string TransportCatalogue::GetInfoBus(const std::string &name) const {
-    using namespace std::string_literals;
-    size_t hash = hasher(name);
-    if (buses.count(hash)) {
-        return buses.at(hash).ToString();
-    } else {
-        return "Bus " + name + ": not found"s;
+void TransportCatalogue::AddBus(const Bus &bus) {    
+    const auto&[it, b] = _buses.insert({bus.name, std::move(bus)});
+    for (const Stop* stop : it->second.stops) {
+        _all_buses_passing_stop.at(stop->name).insert(&it->second);
     }
+}
+
+const Stop* TransportCatalogue::GetStop(const std::string &stop_name) const {
+    return _stops.count(stop_name) ? &_stops.at(stop_name) : nullptr;
+}
+
+const Bus* TransportCatalogue::GetBus(const std::string &bus_name) const {
+    return _buses.count(bus_name) ? &_buses.at(bus_name) : nullptr;
+}
+
+const std::string TransportCatalogue::GetInfoBus(const std::string &bus_name) const {
+    using namespace std::string_literals;
+    return _buses.count(bus_name) ? _buses.at(bus_name).ToString() : "Bus "s + bus_name + ": not found"s;
+}
+
+const std::unordered_set<const Bus*>* TransportCatalogue::GetBusesPassingStop(const std::string &stop_name) const {
+    return _all_buses_passing_stop.count(stop_name) ? &_all_buses_passing_stop.at(stop_name) : nullptr;
 }
