@@ -1,80 +1,81 @@
 #include "input_reader.h"
-#include <deque>
-#include <string>
-#include <limits>
+#include <unordered_map>
 
-void DatabaseFilling(TransportCatalogue &catalog, std::istream &input) {
-    
-    int count_query;        
-    for(;;) {
-        input >> count_query;
- 
-        if(input.eof() || input.bad())
-            return;
-        else if(input.fail()) {
-            input.clear(); // unset failbit
-            input.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // skip bad input
-        } else {
-            break;
-        }
+void DatabaseFilling(TransportCatalogue &catalogue, std::istream &input) {
+
+    const auto &queries = ReadQueries(input);
+    std::unordered_map<const Stop *, std::string_view> stop_and_disnance_other_stops;
+
+    for (const std::string &query : queries.stops) {        
+        catalogue.AddStop(std::move(ReadStop(query)));
     }
+
+    for (const std::string &query : queries.buses) {
+        catalogue.AddBus(std::move(ReadBus(query, catalogue)));
+    }
+}
+
+TypesQueries ReadQueries(std::istream &input) {
+    int count_queries;
+    TypesQueries queries;
+    input >> count_queries;
     input.ignore(1);
-    std::deque<std::string> all_query;
-    
-    for (int i = 0; i < count_query; ++i) {
+
+    for (int i = 0; i < count_queries; ++i) {
         std::string line;
         std::getline(input, line);
-        all_query.push_back(std::move(line));
+        if (line[0] == 'B') {
+            queries.buses.push_back(std::move(line));
+        } else {
+            queries.stops.push_back(std::move(line));
+        }        
     }
+
+    return queries;
+}
+
+Bus ReadBus(const std::string &query, TransportCatalogue &catalogue) {
+    size_t pos_begin = query.find_first_not_of(' ', 3); // bus - content 3 char
+    size_t pos_end = query.find_first_of(':', pos_begin);
+    std::string bus_name = query.substr(pos_begin, pos_end - pos_begin);
+
+    std::deque<const Stop *> stops;
+    pos_begin = pos_end + 1;
     
-    std::deque<std::string> query_bus;
-    size_t pos_begin = 0;
-    size_t pos_end = 0;
-
-    for (const std::string &query : all_query) {
-        pos_begin = query.find_first_not_of(' ');
-
-        if (query[pos_begin] == 'B') {
-            query_bus.push_back(move(query));
-            continue;
-        }
-
-        pos_begin = query.find_first_not_of(' ', pos_begin + 4); // stop - content 4 char
-        pos_end = query.find_first_of(':', pos_begin);
-        std::string stop_name = query.substr(pos_begin, pos_end - pos_begin);
-
-        pos_begin = pos_end + 1;
-        pos_end = query.find_first_of(',', pos_begin);
-        std::string latitude = query.substr(pos_begin, pos_end - pos_begin);
-
-        pos_begin = pos_end + 1;        
-        std::string longitude = query.substr(pos_begin);
-
-        catalog.AddStop({std::move(stop_name), stod(latitude), stod(longitude)});        
+    while (1) {
+        pos_begin = query.find_first_not_of(' ', pos_begin); // begin stop name
+        if(pos_begin == query.npos) break;
+        size_t pos_delimiter = query.find_first_of(std::string("->"), pos_begin); // find delimiter
+        pos_end = query.find_last_not_of(' ', pos_delimiter - 1) + 1;    // +1 - результат работы ф. указывает на последнюю букву имени остановки
+        std::string stop_name = query.substr(pos_begin, pos_end - pos_begin); 
+        stops.push_back(catalogue.GetStop(stop_name));
+        if (pos_delimiter == query.npos) break;
+        pos_begin = pos_delimiter + 1;
     }
 
-    for (const std::string &query : query_bus) {
-        pos_begin = query.find_first_not_of(' ');
-        pos_begin = query.find_first_not_of(' ', pos_begin + 3); // bus - content 3 char
-        pos_end = query.find_first_of(':', pos_begin);
-        std::string bus_name = query.substr(pos_begin, pos_end - pos_begin);
+    bool is_circule = query.at(query.find_last_of(std::string("->"))) == '>';
+    return {std::move(bus_name), std::move(stops), is_circule};
+}
 
-        std::deque<const Stop*> stops;
-        pos_begin = pos_end + 1;
-        
-        while (1) {
-            pos_begin = query.find_first_not_of(' ', pos_begin); // begin stop name
-            if(pos_begin == query.npos) break;
-            size_t pos_delimiter = query.find_first_of(std::string("->"), pos_begin); // find delimiter
-            pos_end = query.find_last_not_of(' ', pos_delimiter - 1) + 1;    // +1 - результат работы ф. указывает на последнюю букву имени остановки
-            std::string stop_name = query.substr(pos_begin, pos_end - pos_begin); 
-            stops.push_back(catalog.GetStop(stop_name));
-            if (pos_delimiter == query.npos) break;
-            pos_begin = pos_delimiter + 1;
-        }
+Stop ReadStop(const std::string &query) {
+    size_t pos_begin = query.find_first_not_of(' ', 4); // stop - content 4 char
+    size_t pos_end = query.find_first_of(':', pos_begin);
+    std::string stop_name = query.substr(pos_begin, pos_end - pos_begin);
 
-        bool is_circule = query.at(query.find_last_of(std::string("->"))) == '>';
-        
-        catalog.AddBus({std::move(bus_name), std::move(stops), is_circule});
-    }
+    pos_begin = pos_end + 1;
+    pos_end = query.find_first_of(',', pos_begin);
+    std::string latitude = query.substr(pos_begin, pos_end - pos_begin);
+
+    pos_begin = pos_end + 1;
+    pos_end = query.find_first_of(',', pos_begin);
+    std::string longitude = query.substr(pos_begin, pos_end - pos_begin);
+
+    return {std::move(stop_name), stod(latitude), stod(longitude)};
+}
+
+std::string_view SkipSpaceReadUpToSign(const std::string &str, char sign, size_t &pos_begin, size_t pos_end) {
+    pos_begin = str.find_first_not_of(' ');
+    pos_end = str.find_first_of(':', pos_begin);
+    std::string stop_name = str.substr(pos_begin, pos_end - pos_begin);
+    return {&str[pos_begin], pos_end - pos_begin};
 }

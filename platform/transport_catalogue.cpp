@@ -60,6 +60,20 @@ const std::string TransportCatalogue::GetInfoBus(const std::string &bus_name) co
     return _buses.count(bus_name) ? _buses.at(bus_name).ToString() : "Bus "s + bus_name + ": not found"s;
 }
 
-const std::unordered_set<const Bus*>* TransportCatalogue::GetBusesPassingStop(const std::string &stop_name) const {
+const std::unordered_set<const Bus *> * TransportCatalogue::GetBusesPassingStop(const std::string &stop_name) const {
     return _all_buses_passing_stop.count(stop_name) ? &_all_buses_passing_stop.at(stop_name) : nullptr;
+}
+
+void TransportCatalogue::SetDistanceBetweenTwoStops(const std::string &stop_name1, const std::string &stop_name2, size_t distance) {
+    _distance_between_two_stops[{GetStop(stop_name1), GetStop(stop_name2)}] = distance;
+}
+
+size_t TransportCatalogue::GetDistanceBetweenTwoStops(const std::string &stop_name1, const std::string &stop_name2) {
+    const Stop * stop1 = GetStop(stop_name1);
+    const Stop * stop2 = GetStop(stop_name2);
+    return GetDistanceBetweenTwoStops(stop1, stop2);
+}
+
+size_t TransportCatalogue::GetDistanceBetweenTwoStops(const Stop * stop1, const Stop * stop2) {
+    return _distance_between_two_stops.count({stop1, stop2}) ? _distance_between_two_stops.at({stop1, stop2}) : _distance_between_two_stops.at({stop2, stop1});
 }
