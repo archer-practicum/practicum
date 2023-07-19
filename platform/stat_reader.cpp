@@ -4,63 +4,86 @@
 #include <limits>
 #include <sstream>
 #include <set>
+#include "geo.h"
+#include <iomanip>
 
 using namespace std::string_literals;
 
-void DatabaseQueries(const TransportCatalogue &catalog, std::istream &input) {
-    int count_query;    
-    for(;;) {
-        input >> count_query;
- 
-        if(input.eof() || input.bad())
-            return;
-        else if(input.fail()) {
-            input.clear(); // unset failbit
-            input.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // skip bad input
-        } else {
-            break;
+void DatabaseQueries(const TransportCatalogue &catalogue, std::istream &input) {
+    
+    const auto &queries = detail::ReadQueries(input);
+
+    for (const std::string &query : queries) {
+        std::string info;
+        if (query.at(0) == 'B') {
+            info = GetInfoBus(catalogue, query);
+        } else if (query.at(0) == 'S') {
+            info = GetInfoStop(catalogue, query);
         }
+        std::cout << info << std::endl;
     }
-    input.ignore(1);
-    std::deque<std::string> all_query;    
+}
 
-    for (int i = 0; i < count_query; ++i) {
-        std::string line;
-        std::getline(input, line);
-        all_query.push_back(std::move(line));
+std::string GetInfoBus(const TransportCatalogue &catalogue, const std::string &str) {
+    size_t pos_begin = 3;  // bus - content 3 char
+    pos_begin = str.find_first_not_of(' ', pos_begin);
+    std::string bus_name = str.substr(pos_begin);
+
+    const Bus * bus = catalogue.GetBus(bus_name);
+    std::stringstream res;
+    res << "Bus "s << bus_name << ": "s;
+
+    if (!bus) return res.str() + "not found"s;    
+
+    size_t count_stops = 0;
+    std::set<std::string> unique_stops;
+    double distance = 0;
+
+    for (size_t i = 0u; i < bus->stops.size() - 1; ++i) {
+        distance += ComputeDistance({bus->stops.at(i)->latitude, bus->stops.at(i)->longitude},
+                                    {bus->stops.at(i + 1)->latitude, bus->stops.at(i + 1)->longitude});
+    }
+    
+    if (bus->is_circular) {
+        count_stops = bus->stops.size();
+    } else {
+        count_stops = 2 * bus->stops.size() - 1;        
+        distance *= 2;
     }
 
-    size_t pos_begin = 0;    
+    for (const Stop *stop : bus->stops) {
+        unique_stops.insert(stop->name);
+    }
+    
+    res << count_stops << " stops on route, "s 
+    << unique_stops.size() << " unique stops, "s 
+    << std::setprecision(6) << distance << " route length"s;
 
-    for (const std::string &query : all_query) {
-        pos_begin = query.find_first_not_of(' '); // пропускаем пробелы до начала первого слова
-        if (query.at(pos_begin) == 'B') {
-            pos_begin = query.find_first_not_of(' ', pos_begin + 3); // bus - content 3 char            
-            std::string bus_name = query.substr(pos_begin);
-            std::cout << catalog.GetInfoBus(bus_name) << std::endl;
-        } else if (query.at(pos_begin) == 'S') {
-            pos_begin = query.find_first_not_of(' ', pos_begin + 4); // stop - content 4 char            
-            std::string stop_name = query.substr(pos_begin);
-            std::stringstream sstring;
-            sstring << "Stop "s << stop_name << ": "s;
-            const auto* buses_passing_stop = catalog.GetBusesPassingStop(stop_name);
-            if (!buses_passing_stop) {
-                sstring << "not found"s;
-            } else {
-                if (buses_passing_stop->size()) {
-                    sstring << "buses"s;
-                    std::set<std::string> stops;
-                    for (const Bus* stop : *buses_passing_stop) {
-                        stops.insert(stop->name);
-                    }
-                    for (const std::string &stop_name : stops) {
-                        sstring << " "s << stop_name;
-                    }
-                } else {
-                    sstring << "no buses"s;
-                }
-            }
-            std::cout << sstring.str() << std::endl;
+    return res.str();
+}
+
+std::string GetInfoStop(const TransportCatalogue &catalogue, const std::string &str) {
+    size_t pos_begin = 4; // stop - content 4 char
+    pos_begin = str.find_first_not_of(' ', pos_begin);
+    std::string stop_name = str.substr(pos_begin);    
+    const auto* buses_passing_stop = catalogue.GetBusesPassingStop(stop_name);
+    std::stringstream res;
+    res << "Stop "s << stop_name << ": "s;
+
+    if (!buses_passing_stop) return res.str() + "not found"s;
+    
+    if (buses_passing_stop->size()) {
+        res << "buses"s;
+        std::set<std::string> stops;
+        for (const Bus* stop : *buses_passing_stop) {
+            stops.insert(stop->name);
         }
+        for (const std::string &stop_name : stops) {
+            res << " "s << stop_name;
+        }
+    } else {
+        res << "no buses"s;
     }
+    
+    return res.str();
 }

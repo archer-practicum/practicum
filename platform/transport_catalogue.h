@@ -13,20 +13,19 @@ struct Stop {
 struct Bus {
     std::string name;
     std::deque<const Stop *> stops;
-    bool is_circular;
-    std::string ToString() const;
+    bool is_circular;    
 };
 
 class TransportCatalogue {
 
 public:
-    void AddStop(const Stop &stop);
+    const Stop* AddStop(const Stop &stop);
     void AddBus(const Bus &bus);
     const Stop* GetStop(const std::string &stop_name) const;
-    const Bus* GetBus(const std::string &bus_name) const;
-    const std::string GetInfoBus(const std::string &bus_name) const;
+    const Bus* GetBus(const std::string &bus_name) const;    
     const std::unordered_set<const Bus *> * GetBusesPassingStop(const std::string &stop_name) const;
     void SetDistanceBetweenTwoStops(const std::string &stop_name1, const std::string &stop_name2, size_t distance);
+    void SetDistanceBetweenTwoStops(const Stop * stop1, const Stop * stop2, size_t distance);
     size_t GetDistanceBetweenTwoStops(const std::string &stop_name1, const std::string &stop_name2);
     size_t GetDistanceBetweenTwoStops(const Stop * stop1, const Stop * stop2);
 
