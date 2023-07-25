@@ -132,7 +132,7 @@ public:
     Document(){}    
 
     template<typename Obj>
-    void AddPtr(Obj obj) { _shapes.emplace_back(std::make_unique<Obj>(std::move(obj))); }
+    void Add(Obj obj) { _shapes.emplace_back(std::make_unique<Obj>(std::move(obj))); }
 
     // Добавляет в svg-документ объект-наследник svg::Object
     void AddPtr(std::unique_ptr<Object>&& obj);

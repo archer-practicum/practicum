@@ -18,10 +18,16 @@ void Object::Render(const RenderContext& context) const {
 void Document::AddPtr(std::unique_ptr<Object>&& obj) { _shapes.push_back(std::move(obj)); }
 
 void Document::Render(std::ostream& out) const {
-    RenderContext context(out);
-    
+    RenderContext context(out, 2, 2);
+
+    out <<  "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl
+        << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
+
     for (const auto &shape : _shapes) shape->Render(context);
-}
+    
+    out << "</svg> "sv << std::endl;
+    
+    }
 
 // ------------Polyline-----------------
 
@@ -30,11 +36,18 @@ Polyline& Polyline::AddPoint(Point point) {
     return *this;
 }
 
-void Polyline::RenderObject(const RenderContext& context) const {
-    auto& out = context.out;
-    out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
-    out << "r=\""sv << radius_ << "\" "sv;
-    out << "/>"sv;
+void Polyline::RenderObject(const RenderContext& context) const {    
+    auto &out = context.out;
+    out << "<polyline points="sv;
+    out << "\""sv;
+    bool first_el = true;
+    for (const auto &point : _points) {
+        if (!first_el) out << " "sv;
+        else first_el = false;
+        out << point.x << ","sv << point.y; 
+    }
+    out << "\""sv;
+    out << " />"sv;
 }
 
 // ---------- Circle ------------------

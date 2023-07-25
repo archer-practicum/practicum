@@ -10,7 +10,7 @@ using namespace svg;
 Пример использования библиотеки. Он будет компилироваться и работать, когда вы реализуете
 все классы библиотеки.
 */
-/*
+
 namespace {
 
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays) {
@@ -31,37 +31,46 @@ Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_ra
 void DrawPicture() {
     Document doc;
     doc.Add(Circle().SetCenter({20, 20}).SetRadius(10));
-    doc.Add(Text()
-                .SetFontFamily("Verdana"s)
-                .SetPosition({35, 20})
-                .SetOffset({0, 6})
-                .SetFontSize(12)
-                .SetFontWeight("bold"s)
-                .SetData("Hello C++"s));
+    // doc.Add(Text()
+    //             .SetFontFamily("Verdana"s)
+    //             .SetPosition({35, 20})
+    //             .SetOffset({0, 6})
+    //             .SetFontSize(12)
+    //             .SetFontWeight("bold"s)
+    //             .SetData("Hello C++"s));
     doc.Add(CreateStar({20, 50}, 10, 5, 5));
     doc.Render(std::cout);
 }
 
 }  // namespace
-*/
+
 
 int main() {
+
+    DrawPicture();
+
     /*
        Это пример для иллюстрации работы класса Circle, данного в заготовке решения.
        После того как вы реализуете реализуете класс Document, аналогичного результата
        можно будет достичь так:
-
-       Document doc;
-       doc.Add(Circle().SetCenter({20, 20}).SetRadius(10));
-       doc.Render(std::cout);
     */
-    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
-    std::cout << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
+    // Document doc;
+    // doc.Add(Circle().SetCenter({20, 20}).SetRadius(10));
+    // doc.Add(Polyline().AddPoint({20, 40}).AddPoint({22.9389, 45.9549}));
+    // doc.Render(std::cout);
+    
+    // std::cout << "---------------------------------------------"sv << std::endl;
 
-    Circle c;
-    c.SetCenter({20, 20}).SetRadius(10);
-    RenderContext ctx(std::cout, 2, 2);
-    c.Render(ctx);
+    // std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
+    // std::cout << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
 
-    std::cout << "</svg>"sv;
+    // Circle c;
+    // c.SetCenter({20, 20}).SetRadius(10);
+    // RenderContext ctx(std::cout, 2, 2);
+    // c.Render(ctx);
+
+    // ctx.out << "  <polyline points=\"20,40 22.9389,45.9549\" /> "sv << std::endl;
+
+
+    // std::cout << "</svg>"sv;
 }
