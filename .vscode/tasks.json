@@ -5,17 +5,38 @@
             "label": "C/C++: g++ debug",
             "command": "/usr/bin/g++",
             "args": [
-                "--std=c++17",                                
-                "-Werror",                   
+                "--std=c++17",
+                "-Werror",
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}/platform/*.cpp",
-                //"-D_GLIBCXX_DEBUG",
-                //"-D_GLIBCXX_DEBUG_PEDANTIC",
                 "-o",
-                "${workspaceFolder}/debug/${fileBasenameNoExtension}",
-                //"-ltbb",
-                //"-lpthread"
+                "${workspaceFolder}/debug/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                //"isDefault": true
+            },
+            "detail": "linux debug"
+        },
+        {
+            "type": "cppbuild",
+            "label": "windows C/C++: g++ debug",
+            "command": "C:\\msys64\\mingw64\\bin\\g++",
+            "args": [
+                "--std=c++17",
+                "-Werror",
+                "-fdiagnostics-color=always",
+                "-g",
+                "${workspaceFolder}/platform/*.cpp",
+                "-o",
+                "${workspaceFolder}/debug/${fileBasenameNoExtension}"
             ],
             "options": {
                 "cwd": "${fileDirname}"
@@ -27,7 +48,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Задача создана отладчиком."
+            "detail": "windows debug"
         },
         {
             "type": "cppbuild",
@@ -61,17 +82,9 @@
                 "-Werror",
                 "-o",
                 "${workspaceFolder}/debug/main",
-                "-fsanitize=address",                       // asan
-                "-g",                                       // debug
-                "-O1",                                      // без оптимизации
-                //"-fno-omit-frame-pointer",                  // asan
-                //"-fno-optimize-sibling-calls",              // asan
-                //"-fsanitize=leak",                          // поиск утечек памяти, только для linux и macos
-                //"-fsanitize=memory"                         // проверка на неинициализированные переменные и работу с ними
-                //"-D_GLIBCXX_DEBUG",                         // обработка ошибок в стандартных библиотеках
-                //"-D_GLIBCXX_DEBUG_PEDANTIC",                // обработка ошибок в стандартных библиотеках
-
-                
+                "-fsanitize=address",
+                "-g",
+                "-O1"
             ],
             "options": {
                 "cwd": "${fileDirname}"
@@ -80,7 +93,7 @@
                 "$gcc"
             ],
             "group": {
-                "kind": "build",                
+                "kind": "build"
             },
             "detail": "clang debug."
         }

@@ -1,5 +1,6 @@
+#define _USE_MATH_DEFINES 
+#include <cmath>
 #include "svg.h"
-
 #include "sstream"
 
 namespace svg {

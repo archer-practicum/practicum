@@ -8,6 +8,25 @@
 
 namespace svg {
 
+class Object;
+
+class ObjectContainer {
+public:
+
+    template<typename Obj>
+    void Add(Obj obj) { AddPtr(std::make_unique<Obj>(std::move(obj))); }
+
+    virtual void AddPtr(std::unique_ptr<Object> &&ptr) = 0;
+    virtual ~ObjectContainer() = default;
+};
+
+
+class Drawable {
+    public: 
+    virtual void Draw(ObjectContainer& container) const = 0;
+    virtual ~Drawable() = default; 
+};
+
 struct Point {
     Point() = default;
     Point(double x, double y)
@@ -129,15 +148,12 @@ private:
     std::string _data;
 };
 
-class Document {
+class Document : public ObjectContainer {
 public:
-    Document(){}    
-
-    template<typename Obj>
-    void Add(Obj obj) { _shapes.emplace_back(std::make_unique<Obj>(std::move(obj))); }
+    Document(){}
 
     // Добавляет в svg-документ объект-наследник svg::Object
-    void AddPtr(std::unique_ptr<Object>&& obj);
+    void AddPtr(std::unique_ptr<Object>&& obj) override;
 
     // Выводит в ostream svg-представление документа
     void Render(std::ostream& out) const;
