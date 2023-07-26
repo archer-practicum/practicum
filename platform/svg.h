@@ -98,7 +98,7 @@ private:
  * Класс Text моделирует элемент <text> для отображения текста
  * https://developer.mozilla.org/en-US/docs/Web/SVG/Element/text
  */
-class Text {
+class Text final : public Object {
 public:
     // Задаёт координаты опорной точки (атрибуты x и y)
     Text& SetPosition(Point pos);
@@ -119,6 +119,8 @@ public:
     Text& SetData(std::string data);
 
 private:
+    void RenderObject(const RenderContext& context) const override;
+
     Point _pos;
     Point _offset;
     uint32_t _font_size = 1;
