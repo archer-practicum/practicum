@@ -5,13 +5,11 @@
 
 namespace svg {
 
-using namespace std::literals;
-
 void Object::Render(const RenderContext& context) const {
     context.RenderIndent();
 
     // Делегируем вывод тега своим подклассам
-    RenderObject(context);
+    RenderObject(context);    
 
     context.out << std::endl;
 }
@@ -26,7 +24,9 @@ void Document::Render(std::ostream& out) const {
     out <<  "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl
         << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
 
-    for (const auto &shape : _shapes) shape->Render(context);
+    for (const auto &shape : _shapes) {
+        shape->Render(context);
+    }
     
     out << "</svg>"sv << std::endl;
     
@@ -35,7 +35,7 @@ void Document::Render(std::ostream& out) const {
 // ------------Polyline-----------------
 
 Polyline& Polyline::AddPoint(Point point) {
-    _points.emplace_back(std::move(point));
+    _points.emplace_back(std::move(point));    
     return *this;
 }
 
@@ -48,8 +48,9 @@ void Polyline::RenderObject(const RenderContext& context) const {
         if (!first_el) out << " "sv;
         else first_el = false;
         out << point.x << ","sv << point.y; 
-    }
+    }    
     out << "\""sv;
+    RenderAttrs(out);
     out << " />"sv;
 }
 
@@ -68,7 +69,8 @@ Circle& Circle::SetRadius(double radius)  {
 void Circle::RenderObject(const RenderContext& context) const {
     auto& out = context.out;
     out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
-    out << "r=\""sv << radius_ << "\" "sv;
+    out << "r=\""sv << radius_ << "\""sv;
+    RenderAttrs(out);
     out << "/>"sv;
 }
 
@@ -137,7 +139,8 @@ void Text::RenderObject(const RenderContext& context) const {
         << " dy=\""sv << _offset.y << "\""sv
         << " font-size=\""sv << _font_size << "\""sv;
         if (!_font_family.empty()) out << " font-family=\""sv << _font_family << "\""sv;
-        if (!_font_weight.empty()) out << " font-weight=\""sv << _font_weight << "\""sv;        
+        if (!_font_weight.empty()) out << " font-weight=\""sv << _font_weight << "\""sv;
+        RenderAttrs(out);
         out << ">"sv << _data << "</text>";
 }
 
