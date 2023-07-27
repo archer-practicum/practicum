@@ -105,6 +105,7 @@ int main() {
     c.SetStrokeColor(purple);
 
     Rgb c1(1u, 2u, 3u);
+    Circle().SetFillColor(NoneColor).Render(cout);
     
     Document doc;
     doc.Add(std::move(c));

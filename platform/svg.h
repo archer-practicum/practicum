@@ -16,14 +16,19 @@ struct Rgb {
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
+    Rgb(size_t r, size_t g, size_t b) : red(r), green(g), blue(b) {};
+    Rgb() = default;
+
 };
 
 struct Rgba : public Rgb {
     double opacity = 1.0;
+    Rgba(size_t r, size_t g, size_t b, double op) : Rgb(r, g, b), opacity(op) {};
+    Rgba() = default;
 };
 
 using Color = std::variant<std::monostate, Rgb, Rgba, std::string>;
-using NoneColor = std::monostate;
+inline const Color NoneColor = std::monostate{};
 
 struct OstreamColorPrinter {
     std::ostream &out;
@@ -111,12 +116,12 @@ template<typename Owner>
 class PathProps {
 public:
     Owner& SetFillColor(Color color) {
-        _fill_color = std::move(color);
+        _fill_color = color;
         return AsOwner();
     }
 
     Owner& SetStrokeColor(Color color) {
-        _stroke_color = std::move(color);
+        _stroke_color = color;
         return AsOwner();
     }
 
