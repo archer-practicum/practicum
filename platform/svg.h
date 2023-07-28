@@ -18,7 +18,6 @@ struct Rgb {
     uint8_t blue = 0;
     Rgb(size_t r, size_t g, size_t b) : red(r), green(g), blue(b) {};
     Rgb() = default;
-
 };
 
 struct Rgba : public Rgb {
