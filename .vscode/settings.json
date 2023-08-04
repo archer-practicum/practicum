@@ -64,6 +64,10 @@
         "optional": "cpp",
         "iomanip": "cpp",
         "charconv": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "regex": "cpp",
+        "bitset": "cpp",
+        "codecvt": "cpp",
+        "fstream": "cpp"
     }
 }
