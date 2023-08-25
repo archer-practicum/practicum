@@ -1,138 +1,73 @@
-#include <cassert>
-#include <filesystem>
-#include <fstream>
+#include "budget_manager.h"
+
 #include <iostream>
-#include <regex>
-#include <sstream>
-#include <string>
 #include <string_view>
-#include <vector>
+#include <cassert>
+#include <cmath>
+#include <sstream>
 
 using namespace std;
-using filesystem::path;
 
-path operator""_p(const char* data, std::size_t sz) {
-    return path(data, data + sz);
+void ParseAndProcessQuery(BudgetManager& manager, const std::string& line) {    
+    std::stringstream input(line);
+
+    std::string type_query;
+    input >> type_query;
+    if (type_query == "Earn") {
+        std::string date_from, date_to;
+        double count;
+        input >> date_from >> date_to >> count;
+        manager.Earn(Date::FromString(date_from), Date::FromString(date_to), count);
+    } else if (type_query == "ComputeIncome") {
+        std::string date_from, date_to;        
+        input >> date_from >> date_to;
+        std::cout << manager.ComputeIncome(Date::FromString(date_from), Date::FromString(date_to)) << std::endl;
+    } else if (type_query == "PayTax") {
+        std::string date_from, date_to;
+        int proc;
+        input >> date_from >> date_to >> proc;
+        manager.PayTax(Date::FromString(date_from), Date::FromString(date_to), proc);
+    } else if (type_query == "Spend") {
+
+    }
 }
 
-string GetFileContents(string file) {
-    ifstream stream(file);
-
-    // конструируем string по двум итераторам
-    return {(istreambuf_iterator<char>(stream)), istreambuf_iterator<char>()};
+int ReadNumberOnLine(istream& input) {
+    std::string line;
+    std::getline(input, line);
+    return std::stoi(line);
 }
 
-// напишите эту функцию
-bool Preprocess(const path& in_file, const path& out_file, const vector<path>& include_directories) {
-    ifstream ifile(in_file);
-    if (!ifile.good()) return false;
-
-    static std::regex include_1(R"/(\s*#\s*include\s*"([^"]*)"\s*)/");
-    static std::regex include_2(R"/(\s*#\s*include\s*<([^>]*)>\s*)/");
-    std::smatch m;
-
-    ofstream ofile(out_file);
-    for (std::string line; std::getline(ifile, line);) {
-        if (std::regex_match(line, m, include_1)) {
-            std::filesystem::path path_file = in_file.parent_path() / std::filesystem::path(m[1]);
-            ifstream file(path_file);
-            if (file.good()) {
-                std::string content{(istreambuf_iterator<char>(file)), istreambuf_iterator<char>()};
-                ofile.write(content.data(), content.size());
-            } else {
-                std::cout << "error not file"sv << std::endl;
-                return false;
-            }            
-        } else if (std::regex_match(line, m, include_2)) {
-            bool has = false;
-            for (const auto &path : include_directories) {
-                std::filesystem::path path_file = path / std::filesystem::path(m[1]);
-                ifstream file(path_file);
-                if (file.good()) {
-                    std::string content{(istreambuf_iterator<char>(file)), istreambuf_iterator<char>()};
-                    ofile.write(content.data(), content.size());
-                    has = true;
-                    break;
-                }
-            }
-            if (!has) {
-                std::cout << "error not file"sv << std::endl;
-                return false;
-            }
-        } else {
-            ofile.write(line.data(), line.size());
-        }
-    }
-    return true;
+bool CompareDouble(double d1, double d2) {
+    static const double exponent = 10E-6;
+    return std::abs(d1 - d2) < exponent;
 }
 
-void Test() {
-    error_code err;
-    filesystem::remove_all("sources"_p, err);
-    filesystem::create_directories("sources"_p / "include2"_p / "lib"_p, err);
-    filesystem::create_directories("sources"_p / "include1"_p, err);
-    filesystem::create_directories("sources"_p / "dir1"_p / "subdir"_p, err);
+void TestBudgetManager() {
+    BudgetManager manager;
 
-    {
-        ofstream file("sources/a.cpp");
-        file << "// this comment before include\n"
-                "#include \"dir1/b.h\"\n"
-                "// text between b.h and c.h\n"
-                "#include \"dir1/d.h\"\n"
-                "\n"
-                "int SayHello() {\n"
-                "    cout << \"hello, world!\" << endl;\n"
-                "#   include<dummy.txt>\n"
-                "}\n"sv;
-    }
-    {
-        ofstream file("sources/dir1/b.h");
-        file << "// text from b.h before include\n"
-                "#include \"subdir/c.h\"\n"
-                "// text from b.h after include"sv;
-    }
-    {
-        ofstream file("sources/dir1/subdir/c.h");
-        file << "// text from c.h before include\n"
-                "#include <std1.h>\n"
-                "// text from c.h after include\n"sv;
-    }
-    {
-        ofstream file("sources/dir1/d.h");
-        file << "// text from d.h before include\n"
-                "#include \"lib/std2.h\"\n"
-                "// text from d.h after include\n"sv;
-    }
-    {
-        ofstream file("sources/include1/std1.h");
-        file << "// std1\n"sv;
-    }
-    {
-        ofstream file("sources/include2/lib/std2.h");
-        file << "// std2\n"sv;
-    }
+    manager.Earn({2000, 1, 2}, {2000, 1, 6}, 20);
+    assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 20));
+    manager.PayTax({2000, 1, 2}, {2000, 1, 3}, 13);
+    assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 18.96));
 
-    assert((!Preprocess("sources"_p / "a.cpp"_p, "sources"_p / "a.in"_p,
-                                  {"sources"_p / "include1"_p,"sources"_p / "include2"_p})));
+    manager.Spend({2000, 12, 30}, {2001, 1, 2}, 14);    
+    assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 8.46));
 
-    ostringstream test_out;
-    test_out << "// this comment before include\n"
-                "// text from b.h before include\n"
-                "// text from c.h before include\n"
-                "// std1\n"
-                "// text from c.h after include\n"
-                "// text from b.h after include\n"
-                "// text between b.h and c.h\n"
-                "// text from d.h before include\n"
-                "// std2\n"
-                "// text from d.h after include\n"
-                "\n"
-                "int SayHello() {\n"
-                "    cout << \"hello, world!\" << endl;\n"sv;
+    manager.PayTax({2000, 12, 30}, {2000, 12, 30}, 13);
+    assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 8.46));
 
-    assert(GetFileContents("sources/a.in"s) == test_out.str());
 }
 
 int main() {
-    Test();
+    TestBudgetManager();
+    BudgetManager manager;
+
+    const int query_count = ReadNumberOnLine(cin);
+
+    for (int i = 0; i < query_count; ++i) {
+        std::string line;
+        std::getline(cin, line);
+        ParseAndProcessQuery(manager, line);
+    }
 }
