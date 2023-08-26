@@ -3,8 +3,9 @@
 
 #include <vector>
 
-struct InfoPayDay {
-    
+struct DailyAccouting {
+    double income = 0.0;
+    double spending = 0.0;
 };
 
 class BudgetManager {
@@ -13,11 +14,11 @@ public:
     inline static const Date END_DATE{2100, 1, 1};
 
     explicit BudgetManager();
-    void Earn(Date from, Date to, double count);
+    void Earn(Date from, Date to, double income);
     double ComputeIncome(Date from, Date to);
     void PayTax(Date from, Date to, int interest_rate);
-    void Spend(Date from, Date to, double count);
+    void Spend(Date from, Date to, double spending);
 
 private:
-    std::vector<double> m_statistics;
+    std::vector<DailyAccouting> m_statistics;
 };

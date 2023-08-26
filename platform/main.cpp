@@ -28,7 +28,10 @@ void ParseAndProcessQuery(BudgetManager& manager, const std::string& line) {
         input >> date_from >> date_to >> proc;
         manager.PayTax(Date::FromString(date_from), Date::FromString(date_to), proc);
     } else if (type_query == "Spend") {
-
+        std::string date_from, date_to;
+        double spending;
+        input >> date_from >> date_to >> spending;
+        manager.Spend(Date::FromString(date_from), Date::FromString(date_to), spending);
     }
 }
 
@@ -48,6 +51,7 @@ void TestBudgetManager() {
 
     manager.Earn({2000, 1, 2}, {2000, 1, 6}, 20);
     assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 20));
+
     manager.PayTax({2000, 1, 2}, {2000, 1, 3}, 13);
     assert(CompareDouble(manager.ComputeIncome({2000, 1, 1}, {2001, 1, 1}), 18.96));
 

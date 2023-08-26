@@ -68,6 +68,8 @@
         "regex": "cpp",
         "bitset": "cpp",
         "codecvt": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "format": "cpp",
+        "span": "cpp"
     }
 }

@@ -19,10 +19,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "group": "build",
             "detail": "linux debug"
         },
         {
@@ -44,7 +41,10 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": "build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
             "detail": "windows debug"
         },
         {
@@ -93,6 +93,17 @@
                 "kind": "build"
             },
             "detail": "clang debug."
+        },
+        {
+            "type": "cmake",
+            "label": "CMake: сборка",
+            "command": "build",
+            "targets": [
+                "[Нет данных — выберите комплект]"
+            ],
+            "group": "build",
+            "problemMatcher": [],
+            "detail": "Задача шаблона CMake сборка"
         }
     ],
     "version": "2.0.0"
