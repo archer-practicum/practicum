@@ -14,10 +14,6 @@ public:
         , day_(day) {
     }
 
-    bool operator<(const Date& other) {
-        return std::tuple{year_, month_, day_} < std::tuple{other.year_, other.month_, other.day_};
-    }
-
     // тут правильно использовать string_view, но regex его пока не поддерживает
     static Date FromString(const std::string& str) {
         static const std::regex date_regex(R"/(([0-9]{4})-([0-9]{2})-([0-9]{2}))/");
