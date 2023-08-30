@@ -19,7 +19,7 @@ public:
     }
 
     double ComputeSum(Date from, Date to) const {
-        return tree_.ComputeSum(MakeDateSegment(from, to));
+        return tree_.ComputeSum(MakeDateSegment(from, to)).ComputeIncome();
     }
 
     void AddBulkOperation(Date from, Date to, const BulkLinearUpdater& operation) {
@@ -27,30 +27,5 @@ public:
     }
 
 private:
-    SummingSegmentTree<DailyAccouting, BulkLinearUpdater> tree_{GetDayIndex(END_DATE)};
+    SummingSegmentTree<DayState, BulkLinearUpdater> tree_{GetDayIndex(END_DATE)};
 };
-
-// #pragma once
-// #include "date.h"
-
-// #include <vector>
-
-// struct DailyAccouting {
-//     double income = 0.0;
-//     double spending = 0.0;
-// };
-
-// class BudgetManager {
-// public:
-//     inline static const Date START_DATE{2000, 1, 1};
-//     inline static const Date END_DATE{2100, 1, 1};
-
-//     explicit BudgetManager();
-//     void Earn(Date from, Date to, double income);
-//     double ComputeIncome(Date from, Date to);
-//     void PayTax(Date from, Date to, int interest_rate);
-//     void Spend(Date from, Date to, double spending);
-
-// private:
-//     std::vector<DailyAccouting> m_statistics;
-// };

@@ -49,24 +49,19 @@ class PayTax : public ModifyQuery {
 public:
     using ModifyQuery::ModifyQuery;
 
-    PayTax(Date from, Date to) = delete;
-
-    PayTax(Date from, Date to, int interest_rate) : ModifyQuery(from, to), m_interest_rate(interest_rate)  {}
-
     void Process(BudgetManager& budget) const override {
-        budget.AddBulkOperation(GetFrom(), GetTo(), BulkTaxApplier{1, m_interest_rate});
+        budget.AddBulkOperation(GetFrom(), GetTo(), BulkTaxApplier{1});
     }
 
     class Factory : public QueryFactory {
     public:
         std::unique_ptr<Query> Construct(std::string_view config) const override {
             auto parts = Split(config, ' ');
-            return std::make_unique<PayTax>(Date::FromString(parts[0]), Date::FromString(parts[1]), std::stoi(std::string(parts[2])));
+            return std::make_unique<PayTax>(Date::FromString(parts[0]), Date::FromString(parts[1]));
         }
     };
 
 private:
-    int m_interest_rate = 0;
 };
 
 }  // namespace queries

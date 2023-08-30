@@ -7,17 +7,11 @@
 #include <cmath>
 
 struct BulkMoneyAdder {
-    double delta = {};
+    DayState delta = {};
 };
 
 struct BulkTaxApplier {
-    double ComputeFactor() const {
-        double factor = 1 - static_cast<double>(intereset_rate) / 100;
-        return std::pow(factor, count);
-    }
-
-    int count = 0;
-    int intereset_rate = 0;
+    double factor = 1.0;
 };
 
 class BulkLinearUpdater {
@@ -33,12 +27,12 @@ public:
     }
 
     void CombineWith(const BulkLinearUpdater& other) {
-        tax_.count += other.tax_.count;
-        add_.delta = add_.delta * other.tax_.ComputeFactor() + other.add_.delta;
+        tax_.factor *= other.tax_.factor;
+        add_.delta = add_.delta * other.tax_.factor + other.add_.delta;
     }
 
-    double Collapse(DailyAccouting origin, IndexSegment segment) const {
-        return origin * tax_.ComputeFactor() + add_.delta * static_cast<double>(segment.length());
+    DayState Collapse(DayState origin, IndexSegment segment) const {
+        return origin * tax_.factor + add_.delta;
     }
 
 private:

@@ -1,13 +1,24 @@
 #pragma once
 
-struct DailyAccouting {
+struct DayState {
 
-    DailyAccouting& operator+(const DailyAccouting& other) {
-        income += other.income;
-        spending += other.spending;
+    DayState operator+(const DayState& other) const {        
+        return {earned + other.earned, spent};
+    }
+
+    DayState operator-(const DayState& other) const {
+        return {earned, spent + other.spent};
+    }
+
+    DayState& operator*(double interest_rate) {
+        earned *= interest_rate;
         return *this;
     }
 
-    double income = 0.0;
-    double spending = 0.0;
+    double ComputeIncome() const {
+        return earned;
+    }    
+
+    double earned = 0.0;
+    double spent = 0.0;
 };

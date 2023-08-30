@@ -1,5 +1,4 @@
 #pragma once
-
 #include "budget_manager.h"
 #include "date.h"
 
