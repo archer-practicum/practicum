@@ -70,6 +70,7 @@
         "codecvt": "cpp",
         "fstream": "cpp",
         "format": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "cinttypes": "cpp"
     }
 }

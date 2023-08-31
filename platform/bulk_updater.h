@@ -28,11 +28,14 @@ public:
 
     void CombineWith(const BulkLinearUpdater& other) {
         tax_.factor *= other.tax_.factor;
-        add_.delta = add_.delta * other.tax_.factor + other.add_.delta;
+        add_.delta.earned = add_.delta.earned * other.tax_.factor + other.add_.delta.earned;
+        add_.delta.spent += other.add_.delta.spent;
     }
 
     DayState Collapse(DayState origin, IndexSegment segment) const {
-        return origin * tax_.factor + add_.delta;
+        //return origin * tax_.factor + add_.delta * static_cast<double>(segment.length());
+        return {origin.earned * tax_.factor + add_.delta.earned * static_cast<double>(segment.length())
+                , origin.spent + add_.delta.spent * static_cast<double>(segment.length())};
     }
 
 private:
