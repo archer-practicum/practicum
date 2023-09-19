@@ -55,7 +55,7 @@ public:
 
     Optional& operator=(T&& rhs) {
         if (m_is_initialized) {
-            *m_value = rhs;
+            *m_value = std::move(rhs);
         } else {
             m_value = new(&m_data) T(std::move(rhs));
             m_is_initialized = true;    
@@ -75,6 +75,8 @@ public:
             m_is_initialized = true;
         } else if (m_is_initialized && !rhs.m_is_initialized) {
             m_value->~T();            
+            m_is_initialized = false;
+        } else if (!m_is_initialized && !rhs.m_is_initialized) {            
             m_is_initialized = false;
         }
 
