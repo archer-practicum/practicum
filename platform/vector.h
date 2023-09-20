@@ -15,6 +15,18 @@ public:
         , capacity_(capacity) {
     }
 
+    RawMemory(const RawMemory&) = delete;
+    RawMemory& operator=(const RawMemory& rhs) = delete;
+
+    RawMemory(RawMemory&& other) noexcept {
+        Swap(other);
+    }
+
+    RawMemory& operator=(RawMemory&& rhs) noexcept { 
+        Swap(rhs);
+        return *this;
+    }
+
     ~RawMemory() {
         Deallocate(buffer_);
     }
@@ -85,8 +97,48 @@ public:
     Vector(const Vector& other)
         : m_data(other.m_size)
         , m_size(other.m_size) 
-    {        
-        std::uninitialized_copy_n(other.m_data.GetAddress(), m_size, m_data.GetAddress());
+    {   
+        std::uninitialized_copy_n(other.m_data.GetAddress(), other.m_size, m_data.GetAddress());
+    }
+
+    Vector(Vector&& other) noexcept {        
+        Swap(other);
+    }
+
+    Vector& operator=(const Vector& rhs) {
+        if (this == &rhs) return *this;
+        
+        if (rhs.m_size > m_data.Capacity()) {
+            Vector rhs_copy(rhs);
+            Swap(rhs_copy);
+        } else {            
+            if (m_size > rhs.m_size) {
+                DestroyN(m_data.GetAddress() + rhs.m_size, m_size - rhs.m_size);
+                for (size_t i = 0; i < rhs.m_size; ++i) {
+                    m_data[i] = rhs.m_data[i];
+                }
+            } else {
+                for (size_t i = 0; i < m_size; ++i) {
+                    m_data[i] = rhs.m_data[i];
+                }
+                std::uninitialized_copy_n(rhs.m_data + m_size, rhs.m_size - m_size, m_data + m_size);
+            }
+                        
+            m_size = rhs.m_size;
+        }
+        
+        return *this;       
+    }
+
+    Vector& operator=(Vector&& rhs) noexcept {
+        if (this == &rhs) return *this;
+        Swap(rhs);
+        return *this;
+    }
+
+    void Swap(Vector& other) noexcept {        
+        m_data.Swap(other.m_data);
+        std::swap(m_size, other.m_size);
     }
 
     ~Vector() {
@@ -96,7 +148,7 @@ public:
     void Reserve(size_t new_capacity) {
         if (new_capacity <= m_data.Capacity()) return;
         
-        RawMemory<T> new_data(new_capacity);        
+        RawMemory<T> new_data(new_capacity);
         if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
             std::uninitialized_move_n(m_data.GetAddress(), m_size, new_data.GetAddress());
         } else {
