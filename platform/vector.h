@@ -5,65 +5,53 @@
 #include <utility>
 
 template <typename T>
-class Vector {
+class RawMemory {
 public:
-    Vector() = default;
+    RawMemory() = default;
 
-    explicit Vector(size_t size)
-        : data_(Allocate(size))
-        , capacity_(size)
-        , size_(size)  //
-    {
-        for (size_t i = 0; i != size; ++i) {
-            new (data_ + i) T();
-        }
+    explicit RawMemory(size_t capacity)
+        : buffer_(Allocate(capacity))
+        , capacity_(capacity) {
     }
 
-    Vector(const Vector& other)
-        : data_(Allocate(other.size_))
-        , capacity_(other.size_)
-        , size_(other.size_)  //
-    {
-        for (size_t i = 0; i != other.size_; ++i) {
-            CopyConstruct(data_ + i, other.data_[i]);
-        }
+    ~RawMemory() {
+        Deallocate(buffer_);
     }
 
-    ~Vector() {
-        DestroyN(data_, size_);
-        Deallocate(data_);
+    T* operator+(size_t offset) noexcept {
+        // Разрешается получать адрес ячейки памяти, следующей за последним элементом массива
+        assert(offset <= capacity_);
+        return buffer_ + offset;
     }
 
-    size_t Size() const noexcept {
-        return size_;
-    }
-
-    size_t Capacity() const noexcept {
-        return capacity_;
-    }
-
-    void Reserve(size_t new_capacity) {
-        if (new_capacity <= capacity_) {
-            return;
-        }
-        T* new_data = Allocate(new_capacity);
-        for (size_t i = 0; i != size_; ++i) {
-            CopyConstruct(new_data + i, data_[i]);
-        }
-        DestroyN(data_, size_);
-        Deallocate(data_);
-
-        data_ = new_data;
-        capacity_ = new_capacity;
+    const T* operator+(size_t offset) const noexcept {
+        return const_cast<RawMemory&>(*this) + offset;
     }
 
     const T& operator[](size_t index) const noexcept {
-        return const_cast<Vector&>(*this)[index];
+        return const_cast<RawMemory&>(*this)[index];
     }
 
     T& operator[](size_t index) noexcept {
-        assert(index < size_);
-        return data_[index];
+        assert(index < capacity_);
+        return buffer_[index];
+    }
+
+    void Swap(RawMemory& other) noexcept {
+        std::swap(buffer_, other.buffer_);
+        std::swap(capacity_, other.capacity_);
+    }
+
+    const T* GetAddress() const noexcept {
+        return buffer_;
+    }
+
+    T* GetAddress() noexcept {
+        return buffer_;
+    }
+
+    size_t Capacity() const {
+        return capacity_;
     }
 
 private:
@@ -77,7 +65,87 @@ private:
         operator delete(buf);
     }
 
-     // Вызывает деструкторы n объектов массива по адресу buf
+    T* buffer_ = nullptr;
+    size_t capacity_ = 0;
+};
+
+template <typename T>
+class Vector {
+public:
+    Vector() = default;
+
+    explicit Vector(size_t size)
+        : m_data(size)
+        , m_size(size)
+    {
+        size_t i = 0;
+        try {
+            for (; i != size; ++i) {
+                new (m_data.GetAddress() + i) T();
+            }
+        } catch (...) {            
+            DestroyN(m_data.GetAddress(), i);
+            throw;
+        }
+    }
+
+    Vector(const Vector& other)
+        : m_data(other.m_size)
+        , m_size(other.m_size) 
+    {
+        size_t i = 0;
+        try {            
+            for (; i != other.m_size; ++i) {
+                CopyConstruct(m_data.GetAddress() + i, other.m_data[i]);
+            }
+        } catch(...) {
+            DestroyN(m_data.GetAddress(), i);
+            throw;
+        }
+    }
+
+    ~Vector() {
+        DestroyN(m_data.GetAddress(), m_size);
+    }
+
+    void Reserve(size_t new_capacity) {
+        if (new_capacity <= m_data.Capacity()) return;
+        
+        RawMemory<T> new_data(new_capacity);
+        size_t i = 0;
+        try { 
+            for (; i != m_size; ++i) {
+                CopyConstruct(new_data.GetAddress() + i, m_data[i]);
+            }
+        } catch(...) {
+            DestroyN(new_data.GetAddress(), i);
+            throw;
+        }
+
+        DestroyN(m_data.GetAddress(), m_size);
+
+        m_data.Swap(new_data);
+    }
+
+    size_t Size() const noexcept {
+        return m_size;
+    }
+
+    size_t Capacity() const noexcept {
+        return m_data.Capacity();
+    }
+
+    const T& operator[](size_t index) const noexcept {
+        return const_cast<Vector&>(*this)[index];
+    }
+
+    T& operator[](size_t index) noexcept {        
+        return m_data[index];
+    }
+
+private:    
+
+    // Вызывает деструкторы n объектов массива по адресу buf
     static void DestroyN(T* buf, size_t n) noexcept {
         for (size_t i = 0; i != n; ++i) {
             Destroy(buf + i);
@@ -95,7 +163,6 @@ private:
     }
 
 
-    T* data_ = nullptr;
-    size_t capacity_ = 0;
-    size_t size_ = 0;
+    RawMemory<T> m_data;
+    size_t m_size = 0;
 };
