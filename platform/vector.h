@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <new>
 #include <utility>
+#include <memory>
 
 template <typename T>
 class RawMemory {
@@ -78,30 +79,14 @@ public:
         : m_data(size)
         , m_size(size)
     {
-        size_t i = 0;
-        try {
-            for (; i != size; ++i) {
-                new (m_data.GetAddress() + i) T();
-            }
-        } catch (...) {            
-            DestroyN(m_data.GetAddress(), i);
-            throw;
-        }
+        std::uninitialized_value_construct_n(m_data.GetAddress(), size);
     }
 
     Vector(const Vector& other)
         : m_data(other.m_size)
         , m_size(other.m_size) 
-    {
-        size_t i = 0;
-        try {            
-            for (; i != other.m_size; ++i) {
-                CopyConstruct(m_data.GetAddress() + i, other.m_data[i]);
-            }
-        } catch(...) {
-            DestroyN(m_data.GetAddress(), i);
-            throw;
-        }
+    {        
+        std::uninitialized_copy_n(other.m_data.GetAddress(), m_size, m_data.GetAddress());
     }
 
     ~Vector() {
@@ -111,15 +96,11 @@ public:
     void Reserve(size_t new_capacity) {
         if (new_capacity <= m_data.Capacity()) return;
         
-        RawMemory<T> new_data(new_capacity);
-        size_t i = 0;
-        try { 
-            for (; i != m_size; ++i) {
-                CopyConstruct(new_data.GetAddress() + i, m_data[i]);
-            }
-        } catch(...) {
-            DestroyN(new_data.GetAddress(), i);
-            throw;
+        RawMemory<T> new_data(new_capacity);        
+        if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
+            std::uninitialized_move_n(m_data.GetAddress(), m_size, new_data.GetAddress());
+        } else {
+            std::uninitialized_copy_n(m_data.GetAddress(), m_size, new_data.GetAddress());
         }
 
         DestroyN(m_data.GetAddress(), m_size);
@@ -161,7 +142,6 @@ private:
     static void Destroy(T* buf) noexcept {
         buf->~T();
     }
-
 
     RawMemory<T> m_data;
     size_t m_size = 0;
