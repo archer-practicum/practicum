@@ -58,7 +58,7 @@ public:
             *m_value = std::move(rhs);
         } else {
             m_value = new(&m_data) T(std::move(rhs));
-            m_is_initialized = true;    
+            m_is_initialized = true;
         }
 
         return *this;
