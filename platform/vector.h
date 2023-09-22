@@ -261,14 +261,16 @@ public:
             m_data.Swap(new_data);
         } else {
             T t{std::forward<Args>(args)...};
-            if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
-                new(end()) T(std::move(*(end() - 1)));
-                std::move_backward(begin() + index, end() - 1, end() - 1);
-                *(begin() + index) = std::move(t);
+            if (pos == end()) {
+                if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
+                    new(end()) T(std::move(t));                    
+                } else {
+                    new(end()) T(t);
+                }
             } else {
-                new(end()) T(*(end() - 1));
-                std::move_backward(begin() + index, end() - 1, end() - 1);
-                *(begin() + index) = t;
+                new(end()) T(std::move(*(end() - 1)));
+                std::move_backward(begin() + index, end() - 1, end());
+                *(begin() + index) = std::move(t);
             }
         }
         
@@ -280,7 +282,12 @@ public:
     iterator Erase(const_iterator pos) {
         size_t index = pos - begin();
         Destroy(begin() + index);
-        std::move(begin() + index + 1, end(), begin() + index);
+        if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
+            std::move(begin() + index + 1, end(), begin() + index);
+        } else {
+            std::copy(begin() + index + 1, end(), begin() + index);
+        }
+        
         --m_size;
         return begin() + index;
     }

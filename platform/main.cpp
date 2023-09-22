@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "iostream"
 
 #define PRACTIKUM_ASSERT_EQUAL_OBJ(obj, def_ctor_, copy_ctor_, move_ctor_, copy_assign_, move_assign_, dtor_) \
     assert(obj::def_ctor == def_ctor_);                                                         \
@@ -100,8 +101,37 @@ void TestInsertAdditionalCopyImpl(size_t copy, size_t move) {
     }
 }
 
+template <typename T>
+void PrintVector(const T& t) {
+    for (auto it = t.begin(); it != t.end(); ++it) {
+        std::cout << *it << " ";
+    }
+    std::cout << std::endl;
+}
+
 int main() {
     TestInsertAdditionalCopyImpl<move_without_noexcept>(SIZE, 0u);
     TestInsertAdditionalCopyImpl<move_without_noexcept>(SIZE, 0u);
+
+    Vector<int> v;
+    v.Reserve(10);
+    PrintVector(v);
+    v.Insert(v.begin(), 0);
+    PrintVector(v);
+    v.Insert(v.begin(), 1);
+    PrintVector(v);
+    v.Insert(v.begin(), 2);
+    PrintVector(v);
+    v.Insert(v.begin(), 3);
+    PrintVector(v);
+    v.Insert(v.begin(), 4);
+    PrintVector(v);
+    v.Insert(v.begin(), 5);
+    PrintVector(v);
+
+    for (auto it = v.begin(); it != v.end(); ++it) {
+        std::cout << *it << " ";
+    }    
+    
     return 0;
 }
