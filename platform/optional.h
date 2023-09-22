@@ -136,6 +136,17 @@ public:
         return *m_value;
     }
 
+    template<typename... Args>
+    Optional& Emplace(Args&&... args) {
+        
+        if (m_is_initialized) m_value->~T();
+        else m_is_initialized = true;
+
+        m_value = new(&m_data) T(std::forward<Args>(args)...);
+        
+        return *this;
+    }
+
     void Reset() {
         if (!m_is_initialized) return;
         m_value->~T();

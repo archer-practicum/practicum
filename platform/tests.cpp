@@ -1,8 +1,28 @@
   #include "vector.h"
 
+  #include <iostream>
   #include <stdexcept>
+  #include <string>
 
   namespace {
+
+  // "Магическое" число, используемое для отслеживания живости объекта
+  inline const uint32_t DEFAULT_COOKIE = 0xdeadbeef;
+
+  struct TestObj {
+      TestObj() = default;
+      TestObj(const TestObj& other) = default;
+      TestObj& operator=(const TestObj& other) = default;
+      TestObj(TestObj&& other) = default;
+      TestObj& operator=(TestObj&& other) = default;
+      ~TestObj() {
+          cookie = 0;
+      }
+      [[nodiscard]] bool IsAlive() const noexcept {
+          return cookie == DEFAULT_COOKIE;
+      }
+      uint32_t cookie = DEFAULT_COOKIE;
+  };
 
   struct Obj {
       Obj() {
@@ -18,6 +38,13 @@
           : id(id)  //
       {
           ++num_constructed_with_id;
+      }
+
+      Obj(int id, std::string name)
+          : id(id)
+          , name(std::move(name))  //
+      {
+          ++num_constructed_with_id_and_name;
       }
 
       Obj(const Obj& other)
@@ -45,7 +72,7 @@
 
       static int GetAliveObjectCount() {
           return num_default_constructed + num_copied + num_moved + num_constructed_with_id
-              - num_destroyed;
+              + num_constructed_with_id_and_name - num_destroyed;
       }
 
       static void ResetCounters() {
@@ -55,14 +82,17 @@
           num_moved = 0;
           num_destroyed = 0;
           num_constructed_with_id = 0;
+          num_constructed_with_id_and_name = 0;
       }
 
       bool throw_on_copy = false;
       int id = 0;
+      std::string name;
 
       static inline int default_construction_throw_countdown = 0;
       static inline int num_default_constructed = 0;
       static inline int num_constructed_with_id = 0;
+      static inline int num_constructed_with_id_and_name = 0;
       static inline int num_copied = 0;
       static inline int num_moved = 0;
       static inline int num_destroyed = 0;
@@ -70,7 +100,7 @@
 
   }  // namespace
 
-  inline void Test1() {
+  void Test1() {
       Obj::ResetCounters();
       const size_t SIZE = 100500;
       const size_t INDEX = 10;
@@ -125,7 +155,7 @@
       assert(Obj::GetAliveObjectCount() == 0);
   }
 
-  inline void Test2() {
+  void Test2() {
       const size_t SIZE = 100;
       Obj::ResetCounters();
       {
@@ -172,7 +202,7 @@
       }
   }
 
-  inline void Test3() {
+  void Test3() {
       const size_t MEDIUM_SIZE = 100;
       const size_t LARGE_SIZE = 250;
       const int ID = 42;
@@ -244,5 +274,121 @@
       }
   }
 
+  void Test4() {
+      const size_t ID = 42;
+      const size_t SIZE = 100'500;
+      {
+          Obj::ResetCounters();
+          Vector<Obj> v;
+          v.Resize(SIZE);
+          assert(v.Size() == SIZE);
+          assert(v.Capacity() == SIZE);
+          assert(Obj::num_default_constructed == SIZE);
+      }
+      assert(Obj::GetAliveObjectCount() == 0);
 
+      {
+          const size_t NEW_SIZE = 10'000;
+          Obj::ResetCounters();
+          Vector<Obj> v(SIZE);
+          v.Resize(NEW_SIZE);
+          assert(v.Size() == NEW_SIZE);
+          assert(v.Capacity() == SIZE);
+          assert(Obj::num_destroyed == SIZE - NEW_SIZE);
+      }
+      assert(Obj::GetAliveObjectCount() == 0);
+      {
+          Obj::ResetCounters();
+          Vector<Obj> v(SIZE);
+          Obj o{ID};
+          v.PushBack(o);
+          assert(v.Size() == SIZE + 1);
+          assert(v.Capacity() == SIZE * 2);
+          assert(v[SIZE].id == ID);
+          assert(Obj::num_default_constructed == SIZE);
+          assert(Obj::num_copied == 1);
+          assert(Obj::num_constructed_with_id == 1);
+          assert(Obj::num_moved == SIZE);
+      }
+      assert(Obj::GetAliveObjectCount() == 0);
+      {
+          Obj::ResetCounters();
+          Vector<Obj> v(SIZE);
+          v.PushBack(Obj{ID});
+          assert(v.Size() == SIZE + 1);
+          assert(v.Capacity() == SIZE * 2);
+          assert(v[SIZE].id == ID);
+          assert(Obj::num_default_constructed == SIZE);
+          assert(Obj::num_copied == 0);
+          assert(Obj::num_constructed_with_id == 1);
+          assert(Obj::num_moved == SIZE + 1);
+      }
+      {
+          Obj::ResetCounters();
+          Vector<Obj> v;
+          v.PushBack(Obj{ID});
+          v.PopBack();
+          assert(v.Size() == 0);
+          assert(v.Capacity() == 1);
+          assert(Obj::GetAliveObjectCount() == 0);
+      }
+
+      {
+          Vector<TestObj> v(1);
+          assert(v.Size() == v.Capacity());
+          // Операция PushBack существующего элемента вектора должна быть безопасна
+          // даже при реаллокации памии
+          v.PushBack(v[0]);
+          assert(v[0].IsAlive());
+          assert(v[1].IsAlive());
+      }
+      {
+          Vector<TestObj> v(1);
+          assert(v.Size() == v.Capacity());
+          // Операция PushBack для перемещения существующего элемента вектора должна быть безопасна
+          // даже при реаллокации памяти
+          v.PushBack(std::move(v[0]));
+          assert(v[0].IsAlive());
+          assert(v[1].IsAlive());
+      }
+  }
+
+  void Test5() {
+      const int ID = 42;
+      using namespace std::literals;
+      {
+          Obj::ResetCounters();
+          Vector<Obj> v;
+          auto& elem = v.EmplaceBack(ID, "Ivan"s);
+          assert(v.Capacity() == 1);
+          assert(v.Size() == 1);
+          assert(&elem == &v[0]);
+          assert(v[0].id == ID);
+          assert(v[0].name == "Ivan"s);
+          assert(Obj::num_constructed_with_id_and_name == 1);
+          assert(Obj::GetAliveObjectCount() == 1);
+      }
+      assert(Obj::GetAliveObjectCount() == 0);
+      {
+          Vector<TestObj> v(1);
+          assert(v.Size() == v.Capacity());
+          // Операция EmplaceBack существующего элемента вектора должна быть безопасна
+          // даже при реаллокации памяти
+          v.EmplaceBack(v[0]);
+          assert(v[0].IsAlive());
+          assert(v[1].IsAlive());
+      }
+  }
+
+  int main() {
+      try {
+          Test1();
+          Test2();
+          Test3();
+          Test4();
+          Test5();
+      } catch (const std::exception& e) {
+          std::cerr << e.what() << std::endl;
+      }
+  }
   

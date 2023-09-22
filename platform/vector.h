@@ -160,6 +160,51 @@ public:
         m_data.Swap(new_data);
     }
 
+    void Resize(size_t new_size) {
+        if (m_size == new_size) return;
+        if(new_size < m_size) {
+            DestroyN(m_data + new_size, m_size - new_size);
+        } else {
+            Reserve(new_size);
+            std::uninitialized_value_construct_n(m_data + m_size, new_size - m_size);
+        }
+        m_size = new_size;
+    }
+
+    void PushBack(const T& value) {
+        EmplaceBack(value);
+    }
+    
+    void PushBack(T&& value) {
+        EmplaceBack(std::move(value));
+    }
+
+    template <typename... Args>
+    T& EmplaceBack(Args&&... args) {
+        if (m_size == Capacity()) {
+            RawMemory<T> new_data(m_size == 0 ? 1 : m_size * 2);
+            new(new_data + m_size) T(std::forward<Args>(args)...);
+            if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
+                std::uninitialized_move_n(m_data.GetAddress(), m_size, new_data.GetAddress());
+            } else {
+                std::uninitialized_copy_n(m_data.GetAddress(), m_size, new_data.GetAddress());
+            }
+
+            DestroyN(m_data.GetAddress(), m_size);
+
+            m_data.Swap(new_data);
+
+        } else {
+            new(m_data + m_size) T(std::forward<Args>(args)...);
+        }
+        return m_data[m_size++];
+    }
+
+    void PopBack() {
+        Destroy(m_data + m_size);
+        --m_size;
+    }
+
     size_t Size() const noexcept {
         return m_size;
     }
