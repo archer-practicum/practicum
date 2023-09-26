@@ -1,137 +1,66 @@
-#include "vector.h"
-#include "iostream"
+#include <array>
+#include <iostream>
+#include <string>
+#include <time.h>
+#include "identity_document.h"
+#include "passport.h"
+#include "driving_licence.h"
+#include "international_driving_licence.h"
+#include "travel_pack.h"
+using namespace std;
 
-#define PRACTIKUM_ASSERT_EQUAL_OBJ(obj, def_ctor_, copy_ctor_, move_ctor_, copy_assign_, move_assign_, dtor_) \
-    assert(obj::def_ctor == def_ctor_);                                                         \
-    assert(obj::copy_ctor == copy_ctor_);                                                       \
-    assert(obj::move_ctor == move_ctor_);                                                       \
-    assert(obj::copy_assign == copy_assign_);                                                   \
-    assert(obj::move_assign == move_assign_);                                                   \
-    assert(obj::dtor == dtor_);
-
-int DEFAULT_COOKIE = 1234;
-int MAGIC = 123;
-int SIZE = 10;
-
-template<bool MoveNoexcept>
-struct WithCopy {
-    WithCopy() noexcept {
-        ++def_ctor;
-    }
-
-    WithCopy(const int&) noexcept {
-        ++copy_with_val;
-    }
-
-    WithCopy(int&&) noexcept {
-        ++move_with_val;
-    }
-
-    WithCopy(const WithCopy & /*other*/) noexcept {
-        ++copy_ctor;
-    }
-
-    WithCopy(WithCopy && /*other*/) noexcept(MoveNoexcept) {
-        ++move_ctor;
-    }
-
-    WithCopy &operator=(const WithCopy &other) noexcept {
-        if (this != &other) {
-            ++copy_assign;
-        }
-        return *this;
-    }
-
-    WithCopy &operator=(WithCopy && /*other*/) noexcept {
-        ++move_assign;
-        return *this;
-    }
-
-    ~WithCopy() {
-        ++dtor;
-    }
-
-    static size_t InstanceCount() {
-        return def_ctor + copy_ctor + move_ctor - dtor;
-    }
-
-    static void Reset() {
-        def_ctor = 0;
-        copy_ctor = 0;
-        move_ctor = 0;
-        copy_assign = 0;
-        move_assign = 0;
-        dtor = 0;
-        copy_with_val = 0;
-        move_with_val = 0;
-    }
-
-    inline static size_t def_ctor = 0;
-    inline static size_t copy_ctor = 0;
-    inline static size_t move_ctor = 0;
-    inline static size_t copy_assign = 0;
-    inline static size_t move_assign = 0;
-    inline static size_t dtor = 0;
-    inline static size_t copy_with_val = 0;
-    inline static size_t move_with_val = 0;
-
-};
-
-using move_without_noexcept = WithCopy<false>;
-
-
-template<typename OBJ>
-void TestInsertAdditionalCopyImpl(size_t copy, size_t move) {
-    {
-        OBJ a;
-        Vector <OBJ> v(SIZE);
-        OBJ::Reset();
-        v.Insert(v.begin(), a);
-
-        PRACTIKUM_ASSERT_EQUAL_OBJ(OBJ, 0u, copy + 1, move, 0u, 0u, SIZE)
-    }
-    {
-        OBJ a;
-        Vector <OBJ> v(SIZE);
-        v.Reserve(2 * SIZE);
-        OBJ::Reset();
-        v.Insert(v.begin(), a);
-
-        PRACTIKUM_ASSERT_EQUAL_OBJ(OBJ, 0u, 1u, 1u, 0u, SIZE, 1u)
-    }
+inline void PrintInfo(const IdentityDocument& doc) {
+    doc.PrintID();
 }
 
-template <typename T>
-void PrintVector(const T& t) {
-    for (auto it = t.begin(); it != t.end(); ++it) {
-        std::cout << *it << " ";
-    }
-    std::cout << std::endl;
+inline void PrintInfo() {
+    IdentityDocument::PrintUniqueIDCount();
+}
+
+inline void PrintInfo(const Passport& pass) {
+    pass.PrintVisa("France"s);
+}
+
+inline IdentityDocument PrintInfo(int i) {
+    Passport pass;
+    cout << "PrintInfo("sv << i << ")"sv << endl;
+    pass.PrintID();
+    return pass;
+}
+
+inline void PrintDrivingLicence(DrivingLicence dr_lic) {
+    dr_lic.PrintID();
 }
 
 int main() {
-    TestInsertAdditionalCopyImpl<move_without_noexcept>(SIZE, 0u);
-    TestInsertAdditionalCopyImpl<move_without_noexcept>(SIZE, 0u);
+    cout << "Test1"sv << endl;
+    Passport pass;
+    PrintInfo(pass);
+    PrintInfo(3).PrintID();
 
-    Vector<int> v;
-    v.Reserve(10);
-    PrintVector(v);
-    v.Insert(v.begin(), 0);
-    PrintVector(v);
-    v.Insert(v.begin(), 1);
-    PrintVector(v);
-    v.Insert(v.begin(), 2);
-    PrintVector(v);
-    v.Insert(v.begin(), 3);
-    PrintVector(v);
-    v.Insert(v.begin(), 4);
-    PrintVector(v);
-    v.Insert(v.begin(), 5);
-    PrintVector(v);
+    cout << "Test2"sv << endl;
+    array<IdentityDocument*, 3> docs = {new Passport(), new DrivingLicence(), new Passport()};
+    for (const auto* doc : docs) {
+        doc->PrintID();
+    }
 
-    for (auto it = v.begin(); it != v.end(); ++it) {
-        std::cout << *it << " ";
-    }    
-    
-    return 0;
+    for (size_t i = 0; i < docs.size(); ++i) {
+        delete docs[i];
+    }
+
+    cout << "Test3"sv << endl;
+    array<IdentityDocument, 3> docs2 = {Passport(), DrivingLicence(), IdentityDocument()};
+
+    for (size_t i = 0; i < docs2.size(); ++i) {
+        docs2[i].PrintID();
+    }
+
+    PrintInfo(docs2[0]);
+
+    cout << "Test4"sv << endl;
+    IdentityDocument::PrintUniqueIDCount();
+
+    cout << "Test5"sv << endl;
+    Passport pass2;
+    pass2.PrintUniqueIDCount();
 }
